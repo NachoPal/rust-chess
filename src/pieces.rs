@@ -1,33 +1,19 @@
-use super::board::Position;
+use std::fmt::Debug;
+use super::board::{Movement, MovementKind, Position};
 
-#[derive(PartialEq, Eq, Hash, Copy, Clone)]
+#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
 pub enum Color {
 	Black,
 	White,
 }
 
-pub struct Movement {
-	from: Position,
-	to: Position,
-}
-
-pub enum MovementKind {
-	Diagonal,
-	DiagonalOne,
-	Horizontal,
-	HorzonatalOne,
-	Vertical,
-	VerticalOne,
-	Knight,
-	Pawn,
-}
-
-pub trait Piece {
+pub trait Piece: Debug {
   fn new(color: Color) -> Self where Self: Sized;
-	fn valid_moves(&self) -> Vec<MovementKind> { Vec::new() }
+	fn valid_moves(&self) -> Vec<MovementKind> { Vec::default() }
   fn color(&self) -> Color { Color::White }
 }
 
+#[derive(Debug)]
 pub struct Pawn(Color);
 
 impl Pawn {
