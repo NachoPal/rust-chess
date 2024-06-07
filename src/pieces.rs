@@ -1,5 +1,10 @@
 use std::fmt::Debug;
-use super::board::{Movement, MovementKind, Position};
+use super::board::{
+  Movement, 
+  MovementKind::{self, Horizontal,  Vertical, Diagonal, Knight},
+  Direction::{self, Forward, Backward, Left, Right},
+  Position
+};
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
 pub enum Color {
@@ -9,7 +14,6 @@ pub enum Color {
 
 pub trait Piece: Debug {
   fn new(color: Color) -> Self where Self: Sized;
-	fn valid_moves(&self) -> Vec<MovementKind> { Vec::default() }
   fn color(&self) -> Color { Color::White }
 }
 
@@ -25,9 +29,6 @@ impl Pawn {
 impl Piece for Pawn {
   fn new(color: Color) -> Self {
     Self::new(color)
-  }
-  fn valid_moves(&self) -> Vec<MovementKind> {
-      vec![MovementKind::Pawn]
   }
   fn color(&self) -> Color {
     self.0

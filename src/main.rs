@@ -1,6 +1,7 @@
 mod game;
 mod board;
 mod pieces;
+mod decl_macros;
 
 use std::collections::HashMap;
 
@@ -30,7 +31,7 @@ fn main() {
 
   let movement = Movement { from: Position { x: 0, y: 0 }, to: Position { x: 0, y: 1 }};
 
-  let result = game.r#move(movement);
+  let result = game.move_piece(movement);
 
   println!("Movement result {:?}", result);
 }

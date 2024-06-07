@@ -43,8 +43,8 @@ impl<'a> Game<'a> {
     self.turn+=1;
   }
 
-  pub fn r#move(&mut self, movement: Movement) -> Result<(), MovementError> {
-    self.board.r#move(self.playing_color(), movement)
+  pub fn move_piece(&mut self, movement: Movement) -> Result<(), MovementError> {
+    self.board.move_piece(self.playing_color(), movement)
   }
 
   fn playing_color(&self) -> Color {

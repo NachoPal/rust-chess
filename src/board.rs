@@ -2,6 +2,9 @@ use std::error::Error;
 use std::fmt;
 use std::collections::{HashMap, HashSet};
 use super::pieces::{Piece, Color::{self, White, Black}};
+use super::ensure;
+use self::MovementKind::{Diagonal, Horizontal, Vertical, Knight};
+use self::Direction::{Forward, Backward, Left, Right, Unknown};
 
 #[derive(Debug)]
 pub enum MovementError {
@@ -30,8 +33,8 @@ impl Error for MovementError {}
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
 pub struct Position {
-	pub x: u32,
-	pub y: u32,
+	pub x: i32,
+	pub y: i32,
 }
 
 #[derive(Debug)]
@@ -41,15 +44,20 @@ pub struct Movement {
 }
 
 #[derive(Debug)]
+pub enum Direction {
+  Forward(u32),
+  Backward(u32),
+  Left(u32),
+  Right(u32),
+  Unknown,
+}
+
+#[derive(Debug)]
 pub enum MovementKind {
-	Diagonal,
-	DiagonalOne,
-	Horizontal,
-	HorzonatalOne,
-	Vertical,
-	VerticalOne,
+	Diagonal(Direction),
+	Horizontal(Direction),
+	Vertical(Direction),
 	Knight,
-	Pawn,
 }
 
 #[derive(Debug)]
@@ -98,12 +106,14 @@ impl<'a> Board<'a> {
     }
   }
 
-  pub fn r#move(&mut self, playing_color: Color, movement: Movement) -> Result<(), MovementError> {
+  pub fn move_piece(&mut self, playing_color: Color, movement: Movement) -> Result<(), MovementError> {
     self.can_move(playing_color, movement)
   }
 
   fn can_move(&self, playing_color: Color, movement: Movement) -> Result<(), MovementError> {
     let piece = self.pick_piece(movement.from).ok_or(MovementError::NoPiece)?;
+    let movement_kind = self.movement_kind(playing_color, movement)?;
+
     Ok(())
   }
 
@@ -111,8 +121,73 @@ impl<'a> Board<'a> {
     self.positions.get(&position)
   }
 
-  fn movement_kind(movement: Movement) -> MovementKind {
-    MovementKind::Pawn
+  fn movement_kind(&self, playing_color: Color, movement: Movement) -> Result<MovementKind, MovementError> {
+    // Check piece moves
+    let no_move = movement.to.x == self.dimension.x && movement.to.y == self.dimension.y;
+    ensure!(!no_move, MovementError::IllegalMovement);
+
+    // Check it is not out of bounds
+    let out_of_bounds = movement.to.x > self.dimension.x || movement.to.y > self.dimension.y;
+    ensure!(!out_of_bounds, MovementError::OutOfBounds);
+
+    let x_variance = movement.from.x.abs_diff(movement.to.x);
+    let y_variance = movement.from.y.abs_diff(movement.to.y);
+    let variance = (x_variance, y_variance);
+
+    // Vertical movement
+    if movement.from.x == movement.to.x {
+      return Ok(Vertical(Self::movement_direction(playing_color, movement, Vertical(Unknown), variance)))
+    }
+    // Horizontal movement
+    if movement.from.y == movement.to.y {
+      return Ok(Horizontal(Self::movement_direction(playing_color, movement, Horizontal(Unknown), variance)))
+    }
+    // Diagonal && Knight movement
+    if movement.from.y != movement.to.y && movement.from.x != movement.to.x {
+      // Diagonal
+      if x_variance == y_variance {
+        return Ok(Diagonal(Self::movement_direction(playing_color, movement, Diagonal(Unknown), variance)))
+      }
+      // Knight
+      if (x_variance == 2 && y_variance == 1) || (x_variance == 1 && y_variance == 2) {
+        return Ok(MovementKind::Knight);
+      }
+    }
+    
+    Err(MovementError::IllegalMovement)
+  }
+
+  fn movement_direction(
+    playing_color: Color, 
+    movement: Movement, 
+    movement_kind: MovementKind,
+    (x_variance, y_variance): (u32, u32),
+  ) -> Direction {
+    match movement_kind {
+      Horizontal(_) => {
+        if movement.to.x > movement.from.x {
+          Right(x_variance)
+        } else if movement.to.x < movement.from.x {
+          Left(x_variance)
+        } else { Unknown }
+      },
+      Vertical(_) | Diagonal(_) => {
+        if movement.to.y > movement.from.y {
+          if playing_color == White {
+            Forward(y_variance)
+          } else {
+            Backward(y_variance)
+          }
+        } else if movement.to.y < movement.from.y {
+          if playing_color == Black {
+            Forward(y_variance)
+          } else {
+            Backward(y_variance)
+          }
+        } else { Unknown }
+      },
+      _ => Unknown
+    } 
   }
 	//// Return Some(Position) if in `to` there is a rival piece.
 	////  - a way of identifying the killed pieces and remove them from `Board.white` or `Board.black`
