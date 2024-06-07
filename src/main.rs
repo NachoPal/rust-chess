@@ -19,7 +19,7 @@ fn main() {
   let mut pieces_set = HashMap::new();
   let mut board = Board::new(dimension, pieces, &mut positions, &mut pieces_set);
 
-  let pawn = PieceFactory::create::<Pawn>(White);
+  let pawn = PieceFactory::create::<Pawn>(Black);
   let position = Position { x: 0, y: 0 };
   let pieces = vec![(position, pawn)];
   board.add_pieces(pieces);

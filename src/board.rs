@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt;
 use std::collections::{HashMap, HashSet};
-use super::pieces::{Piece, Color::{self, White, Black}};
+use super::pieces::{Piece, Pawn, Color::{self, White, Black}};
 use super::ensure;
 use self::MovementKind::{Diagonal, Horizontal, Vertical, Knight};
 use self::Direction::{Forward, Backward, Left, Right, Unknown};
@@ -43,7 +43,7 @@ pub struct Movement {
 	pub to: Position,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Direction {
   Forward(u32),
   Backward(u32),
@@ -52,7 +52,7 @@ pub enum Direction {
   Unknown,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum MovementKind {
 	Diagonal(Direction),
 	Horizontal(Direction),
@@ -107,21 +107,60 @@ impl<'a> Board<'a> {
   }
 
   pub fn move_piece(&mut self, playing_color: Color, movement: Movement) -> Result<(), MovementError> {
-    self.can_move(playing_color, movement)
+    self.can_move(playing_color, &movement).and_then(|_| {
+      self.replace_square_by(&movement)
+    })
   }
 
-  fn can_move(&self, playing_color: Color, movement: Movement) -> Result<(), MovementError> {
+  fn can_move(&self, playing_color: Color, movement: &Movement) -> Result<bool, MovementError> {
     let piece = self.pick_piece(movement.from).ok_or(MovementError::NoPiece)?;
-    let movement_kind = self.movement_kind(playing_color, movement)?;
+    let piece_color = piece.color();
+    let movement_kind = self.movement_kind(playing_color, &movement)?;
 
-    Ok(())
+    // Check if piece's color intented to be moved matches with color's turn
+    ensure!(piece_color == playing_color, MovementError::WrongPiece(piece_color));
+    // Check if the movement is valid for that piece
+    piece.valid_moves().binary_search(&movement_kind).map_err(|_| MovementError::IllegalMovement)?;
+    // Check it the movement target id valid
+    ensure!(self.valid_target(playing_color, &movement), MovementError::IllegalMovement);
+    // Check if the movement path is blocked
+    let blocked_path = self.blocked_path(&movement);
+    if !piece.is_king() && !piece.is_knight() {
+      ensure!(!blocked_path, MovementError::BlockedPath);
+    }
+    // Check if valid Castle movement
+    if piece.is_king() && blocked_path {
+      // TODO: Check if valid Castle movement
+    }
+    println!("Movement {:?}", movement_kind);
+
+    Ok(true)
   }
 
   fn pick_piece(&self, position: Position) -> Option<&Box<dyn Piece>> {
     self.positions.get(&position)
   }
 
-  fn movement_kind(&self, playing_color: Color, movement: Movement) -> Result<MovementKind, MovementError> {
+  fn valid_target(&self, playing_color: Color, movement: &Movement) -> bool {
+    let target_square= self.pick_piece(movement.from);
+    // Either a rival piece or empty
+    let rival_piece = target_square.is_some_and(|piece| piece.color() != playing_color);
+    let empty_square = target_square.is_none();
+
+    rival_piece || empty_square
+  }
+
+  fn blocked_path(&self, movement: &Movement) -> bool {
+    // TODO
+    false
+  }
+
+  fn replace_square_by(&self, movement: &Movement) -> Result<(), MovementError> {
+    // TODO
+    Ok(())
+  }
+
+  fn movement_kind(&self, playing_color: Color, movement: &Movement) -> Result<MovementKind, MovementError> {
     // Check piece moves
     let no_move = movement.to.x == self.dimension.x && movement.to.y == self.dimension.y;
     ensure!(!no_move, MovementError::IllegalMovement);
@@ -159,7 +198,7 @@ impl<'a> Board<'a> {
 
   fn movement_direction(
     playing_color: Color, 
-    movement: Movement, 
+    movement: &Movement, 
     movement_kind: MovementKind,
     (x_variance, y_variance): (u32, u32),
   ) -> Direction {

@@ -1,7 +1,8 @@
+use std::any::Any;
 use std::fmt::Debug;
 use super::board::{
   Movement, 
-  MovementKind::{self, Horizontal,  Vertical, Diagonal, Knight},
+  MovementKind::{self, Horizontal,  Vertical, Diagonal, Knight as KnightMovement},
   Direction::{self, Forward, Backward, Left, Right},
   Position
 };
@@ -12,26 +13,58 @@ pub enum Color {
 	White,
 }
 
-pub trait Piece: Debug {
+pub trait Piece: Debug + PieceExt {
   fn new(color: Color) -> Self where Self: Sized;
   fn color(&self) -> Color { Color::White }
+  fn valid_moves(&self) -> Vec<MovementKind> { Vec::default() }
+  fn is_knight(&self) -> bool {
+    self.as_any().downcast_ref::<Knight>().is_some()
+  }
+  fn is_king(&self) -> bool {
+    self.as_any().downcast_ref::<King>().is_some()
+  }
+}
+
+// Extend the Piece trait to include a method to return &dyn Any
+pub trait PieceExt {
+  fn as_any(&self) -> &dyn Any;
+}
+
+impl<T: Piece + Any> PieceExt for T {
+  fn as_any(&self) -> &dyn Any {
+      self
+  }
 }
 
 #[derive(Debug)]
 pub struct Pawn(Color);
 
-impl Pawn {
-  fn new(color: Color) -> Self {
-    Pawn(color)
-  }
-}
+#[derive(Debug)]
+pub struct Knight(Color);
+
+#[derive(Debug)]
+pub struct King(Color);
+
+// impl Pawn {
+//   fn new(color: Color) -> Self {
+//     Self(color)
+//   }
+// }
 
 impl Piece for Pawn {
   fn new(color: Color) -> Self {
-    Self::new(color)
+    // Self::new(color)
+    Self(color)
   }
   fn color(&self) -> Color {
     self.0
+  }
+  fn valid_moves(&self) -> Vec<MovementKind> {
+    vec![
+      Vertical(Forward(1)),
+      Vertical(Forward(2)),
+      Diagonal(Forward(1)),
+    ]
   }
 }
 

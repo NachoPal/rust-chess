@@ -1,6 +1,6 @@
 use crate::board::{Movement, MovementError, Position};
 use super::board::Board;
-use super::pieces::Color::{self, Black, White};
+use super::pieces::{Color::{self, Black, White}, Piece};
 
 pub struct Player<'a> {
 	pub name: &'a str,
