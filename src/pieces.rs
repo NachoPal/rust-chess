@@ -37,13 +37,17 @@ impl<T: Piece + Any> PieceExt for T {
 }
 
 #[derive(Debug)]
-pub struct Pawn(Color);
-
+pub struct King(Color);
+#[derive(Debug)]
+pub struct Queen(Color);
+#[derive(Debug)]
+pub struct Rook(Color);
+#[derive(Debug)]
+pub struct Bishop(Color);
 #[derive(Debug)]
 pub struct Knight(Color);
-
 #[derive(Debug)]
-pub struct King(Color);
+pub struct Pawn(Color);
 
 impl Piece for Pawn {
   fn new(color: Color) -> Self {

@@ -248,14 +248,14 @@ impl<'a> Board<'a> {
     (x_variance, y_variance): (u32, u32),
   ) -> Direction {
     match movement_kind {
-      Horizontal(_) | Diagonal(_) => {
+      Horizontal(_) => {
         if movement.to.x > movement.from.x {
           Right(x_variance)
         } else if movement.to.x < movement.from.x {
           Left(x_variance)
         } else { Unknown }
       },
-      Vertical(_) | Diagonal(_) => {
+      Vertical(_) => {
         if movement.to.y > movement.from.y {
           if playing_color == White {
             Forward(y_variance)
@@ -276,9 +276,9 @@ impl<'a> Board<'a> {
 
   fn path_range(direction: &Direction, from: i32, to: i32) -> std::ops::Range<i32> {
     match direction {
-      Forward(_) | Right(_)=> (from + 1..to),
-      Backward(_) | Left(_) => (to + 1..from),
-      _ => (from..to)
+      Forward(_) | Right(_)=> from + 1..to,
+      Backward(_) | Left(_) => to + 1..from,
+      _ => from..to
     }
   }
 	//// Return Some(Position) if in `to` there is a rival piece.
