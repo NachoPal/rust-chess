@@ -45,12 +45,6 @@ pub struct Knight(Color);
 #[derive(Debug)]
 pub struct King(Color);
 
-// impl Pawn {
-//   fn new(color: Color) -> Self {
-//     Self(color)
-//   }
-// }
-
 impl Piece for Pawn {
   fn new(color: Color) -> Self {
     // Self::new(color)
@@ -63,7 +57,8 @@ impl Piece for Pawn {
     vec![
       Vertical(Forward(1)),
       Vertical(Forward(2)),
-      Diagonal(Forward(1)),
+      Diagonal((Forward(1), Right(1))),
+      Diagonal((Forward(1), Left(1))),
     ]
   }
 }

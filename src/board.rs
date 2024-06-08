@@ -1,4 +1,6 @@
 use std::borrow::Borrow;
+// use std::collections::btree_map::Range;
+use std::ops::Range;
 use std::error::Error;
 use std::fmt;
 use std::collections::{HashMap, HashSet};
@@ -55,7 +57,7 @@ pub enum Direction {
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum MovementKind {
-	Diagonal(Direction),
+	Diagonal((Direction, Direction)),
 	Horizontal(Direction),
 	Vertical(Direction),
 	Knight,
@@ -125,7 +127,7 @@ impl<'a> Board<'a> {
     // Check it the movement target id valid
     ensure!(self.valid_target(playing_color, &movement), MovementError::IllegalMovement);
     // Check if the movement path is blocked
-    let blocked_path = self.blocked_path(&movement);
+    let blocked_path = self.blocked_path(&movement, &movement_kind);
     if !piece.is_king() && !piece.is_knight() {
       ensure!(!blocked_path, MovementError::BlockedPath);
     }
@@ -142,6 +144,10 @@ impl<'a> Board<'a> {
     self.positions.get(&position)
   }
 
+  fn square_is_empty(&self, position: Position) -> bool {
+    self.pick_piece(position).is_none()
+  }
+
   fn valid_target(&self, playing_color: Color, movement: &Movement) -> bool {
     let target_square= self.pick_piece(movement.from);
     // Either a rival piece or empty
@@ -151,9 +157,27 @@ impl<'a> Board<'a> {
     rival_piece || empty_square
   }
 
-  fn blocked_path(&self, movement: &Movement) -> bool {
-    // TODO
-    false
+  fn blocked_path(&self, movement: &Movement, movement_kind: &MovementKind) -> bool {
+    match movement_kind {
+      Vertical(direction) => {
+        Self::path_range(direction, movement.from.y, movement.to.y).any(|y| {
+          !self.square_is_empty(Position { x: movement.from.x, y })
+        })
+      },
+      Horizontal(direction) => {
+        Self::path_range(direction, movement.from.x, movement.to.x).any(|x| {
+          !self.square_is_empty(Position { x, y: movement.from.y })
+        })
+      },
+      Diagonal((vertical_directon, horizontal_direction)) => {
+        Self::path_range(vertical_directon, movement.from.y, movement.to.y).any(|y| {
+          Self::path_range(horizontal_direction, movement.from.x, movement.to.x).any(|x| {
+            !self.square_is_empty(Position { x, y })
+          })
+        })
+      },
+      _ => false
+    }
   }
 
   fn replace_square(&mut self, movement: &Movement) -> Result<(), MovementError> {
@@ -166,7 +190,7 @@ impl<'a> Board<'a> {
     if let Some(killed_piece) = self.positions.insert(movement.to, piece_origin) {
       self.pieces_set.get_mut(&killed_piece.color()).expect("Color exists").remove(&movement.to);
     }
-    
+
     Ok(())
   }
 
@@ -195,7 +219,18 @@ impl<'a> Board<'a> {
     if movement.from.y != movement.to.y && movement.from.x != movement.to.x {
       // Diagonal
       if x_variance == y_variance {
-        return Ok(Diagonal(Self::movement_direction(playing_color, movement, Diagonal(Unknown), variance)))
+        return Ok(
+          Diagonal(
+            (
+              Self::movement_direction(
+                playing_color, movement, Vertical(Unknown), variance
+              ),
+              Self::movement_direction(
+                playing_color, movement, Horizontal(Unknown), variance
+              ),
+            )
+          )
+        )
       }
       // Knight
       if (x_variance == 2 && y_variance == 1) || (x_variance == 1 && y_variance == 2) {
@@ -213,7 +248,7 @@ impl<'a> Board<'a> {
     (x_variance, y_variance): (u32, u32),
   ) -> Direction {
     match movement_kind {
-      Horizontal(_) => {
+      Horizontal(_) | Diagonal(_) => {
         if movement.to.x > movement.from.x {
           Right(x_variance)
         } else if movement.to.x < movement.from.x {
@@ -237,6 +272,14 @@ impl<'a> Board<'a> {
       },
       _ => Unknown
     } 
+  }
+
+  fn path_range(direction: &Direction, from: i32, to: i32) -> std::ops::Range<i32> {
+    match direction {
+      Forward(_) | Right(_)=> (from + 1..to),
+      Backward(_) | Left(_) => (to + 1..from),
+      _ => (from..to)
+    }
   }
 	//// Return Some(Position) if in `to` there is a rival piece.
 	////  - a way of identifying the killed pieces and remove them from `Board.white` or `Board.black`
