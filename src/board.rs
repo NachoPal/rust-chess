@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::error::Error;
 use std::fmt;
 use std::collections::{HashMap, HashSet};
@@ -108,7 +109,7 @@ impl<'a> Board<'a> {
 
   pub fn move_piece(&mut self, playing_color: Color, movement: Movement) -> Result<(), MovementError> {
     self.can_move(playing_color, &movement).and_then(|_| {
-      self.replace_square_by(&movement)
+      self.replace_square(&movement)
     })
   }
 
@@ -155,8 +156,17 @@ impl<'a> Board<'a> {
     false
   }
 
-  fn replace_square_by(&self, movement: &Movement) -> Result<(), MovementError> {
-    // TODO
+  fn replace_square(&mut self, movement: &Movement) -> Result<(), MovementError> {
+    // Remove piece from origin and update its `pieces_set`
+    let piece_origin = self.positions.remove(&movement.from).ok_or(MovementError::NoPiece)?;
+    self.pieces_set.get_mut(&piece_origin.color()).expect("Color exists").remove(&movement.from);
+    self.pieces_set.get_mut(&piece_origin.color()).expect("Color exists").insert(movement.to);
+
+    // Insert origin piece in target and remove killed rival piece if existed in that square
+    if let Some(killed_piece) = self.positions.insert(movement.to, piece_origin) {
+      self.pieces_set.get_mut(&killed_piece.color()).expect("Color exists").remove(&movement.to);
+    }
+    
     Ok(())
   }
 
