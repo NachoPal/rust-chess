@@ -1,12 +1,12 @@
-use std::borrow::Borrow;
-// use std::collections::btree_map::Range;
-use std::ops::Range;
 use std::error::Error;
 use std::fmt;
 use std::collections::{HashMap, HashSet};
-use super::pieces::{Piece, Pawn, Color::{self, White, Black}};
+use super::pieces::{
+  Piece, Color::{self, White, Black},
+  King, Queen, Pawn, Rook, Bishop, Knight
+};
 use super::ensure;
-use self::MovementKind::{Diagonal, Horizontal, Vertical, Knight};
+use self::MovementKind::{Diagonal, Horizontal, Vertical, Knight as KnightMovement};
 use self::Direction::{Forward, Backward, Left, Right, Unknown};
 
 #[derive(Debug)]
@@ -73,7 +73,7 @@ pub struct Board<'a> {
 impl<'a> Board<'a> {
   pub fn new(
     dimension: Position,
-    maybe_pieces: Option<Vec<(Position, impl Piece + 'static)>>,
+    maybe_pieces: Option<Vec<(Position, Box<dyn Piece>)>>,
     positions: &'a mut HashMap<Position, Box<dyn Piece>>,
     pieces_set: &'a mut HashMap<Color, HashSet<Position>>,
   ) -> Self {
@@ -88,14 +88,15 @@ impl<'a> Board<'a> {
     }
   }
 
-  pub fn add_pieces(&mut self, new_pieces: Vec<(Position, impl Piece + 'static)>) {
+  // pub fn add_pieces(&mut self, new_pieces: Vec<(Position, Box<impl Piece + 'static>)>) {
+  pub fn add_pieces(&mut self, new_pieces: Vec<(Position, Box<dyn Piece>)>) {
     Self::do_add_pieces(self.positions, self.pieces_set, new_pieces);
   }
 
   fn do_add_pieces(
     positions: &mut HashMap<Position, Box<dyn Piece>>,
     pieces_set: &mut HashMap<Color, HashSet<Position>>,
-    new_pieces: Vec<(Position, impl Piece + 'static)>,
+    new_pieces: Vec<(Position, Box<dyn Piece>)>,
   ) {
     for (position, piece) in new_pieces {
       let piece_color = piece.color();
@@ -105,7 +106,7 @@ impl<'a> Board<'a> {
         pieces_set.insert(piece_color, HashSet::new());
         pieces_set.get_mut(&piece_color).expect("Color exists").insert(position);
       }
-      positions.insert(position, Box::new(piece));
+      positions.insert(position, piece);
     }
   }
 
@@ -123,7 +124,7 @@ impl<'a> Board<'a> {
     // Check if piece's color intented to be moved matches with color's turn
     ensure!(piece_color == playing_color, MovementError::WrongPiece(piece_color));
     // Check if the movement is valid for that piece
-    piece.valid_moves().binary_search(&movement_kind).map_err(|_| MovementError::IllegalMovement)?;
+    self.is_valid_move(piece, &movement_kind)?;
     // Check it the movement target id valid
     ensure!(self.valid_target(playing_color, &movement), MovementError::IllegalMovement);
     // Check if the movement path is blocked
@@ -138,6 +139,60 @@ impl<'a> Board<'a> {
     println!("Movement {:?}", movement_kind);
 
     Ok(true)
+  }
+
+  fn is_valid_move(&self, piece: &Box<dyn Piece>, movement_kind: &MovementKind) -> Result<bool, MovementError> {
+    let max_x = self.dimension.x as u32;
+    let max_y = self.dimension.y as u32;
+    let valid_moves = if piece.as_any().downcast_ref::<King>().is_some() {
+      vec![
+        Vertical(Forward(1)),
+        Vertical(Backward(1)),
+        Horizontal(Left(1)),
+        Horizontal(Right(1)),
+        Diagonal((Forward(1), Right(1))),
+        Diagonal((Forward(1), Left(1))),
+        Diagonal((Backward(1), Right(1))),
+        Diagonal((Backward(1), Left(1))),
+      ]
+    } else if piece.as_any().downcast_ref::<Queen>().is_some() {
+      vec![
+        Vertical(Forward(max_y)),
+        Vertical(Backward(max_y)),
+        Horizontal(Left(max_x)),
+        Horizontal(Right(max_x)),
+        Diagonal((Forward(max_y), Right(max_x))),
+        Diagonal((Forward(max_y), Left(max_x))),
+        Diagonal((Backward(max_y), Right(max_x))),
+        Diagonal((Backward(max_y), Left(max_x))),
+      ]
+    } else if piece.as_any().downcast_ref::<Rook>().is_some() {
+      vec![
+        Vertical(Forward(max_y)),
+        Vertical(Backward(max_y)),
+        Horizontal(Left(max_x)),
+        Horizontal(Right(max_x)),
+      ]
+    } else if piece.as_any().downcast_ref::<Knight>().is_some() {
+      vec![KnightMovement]
+    } else if piece.as_any().downcast_ref::<Bishop>().is_some() {
+      vec![
+        Diagonal((Forward(max_y), Right(max_x))),
+        Diagonal((Forward(max_y), Left(max_x))),
+        Diagonal((Backward(max_y), Right(max_x))),
+        Diagonal((Backward(max_y), Left(max_x))),
+      ]
+    } else if piece.as_any().downcast_ref::<Pawn>().is_some() {
+      vec![
+        Vertical(Forward(1)),
+        Vertical(Forward(2)),
+        Diagonal((Forward(1), Right(1))),
+        Diagonal((Forward(1), Left(1))),
+      ]
+    } else {
+        vec![]
+    };
+    valid_moves.binary_search(movement_kind).and_then(|_| Ok(true)).map_err(|_| MovementError::IllegalMovement)
   }
 
   fn pick_piece(&self, position: Position) -> Option<&Box<dyn Piece>> {
@@ -281,12 +336,4 @@ impl<'a> Board<'a> {
       _ => from..to
     }
   }
-	//// Return Some(Position) if in `to` there is a rival piece.
-	////  - a way of identifying the killed pieces and remove them from `Board.white` or `Board.black`
-	//// It will call to `can_move`
-	//// `color` is useful to know if the player is trying to move one of his pieces
-	// fn move(&self, color: Color, movement: Movement) -> Result<Option<Position>, E>;
-	//    // Check Piece at movement.from and see if its `valid_movements` includes the
-	//    // result from movement.kind().
-	// fn can_move(&self, color: Color, movement: Movement) -> Result<bool, E>;
 }
