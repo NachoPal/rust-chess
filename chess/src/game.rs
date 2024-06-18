@@ -47,19 +47,21 @@ impl<'a> Game<'a> {
       Black => (self.board.dimension.y - 1, -1),
     };
     //King
-    let king = (Position { x: 4, y: row }, PieceFactory::create::<King>(color), );
+    let king = (Position { x: 4, y: row }, PieceFactory::create::<King>(color));
     //King
-    let queen = (Position { x: 3, y: row }, PieceFactory::create::<Queen>(color), );
+    let queen = (Position { x: 3, y: row }, PieceFactory::create::<Queen>(color));
     // Rooks
-    let rook_left = (Position { x: 0, y: row }, PieceFactory::create::<Rook>(color), );
-    let rook_right = (Position { x: 7, y: row }, PieceFactory::create::<Rook>(color), );
+    let rook_left = (Position { x: 0, y: row }, PieceFactory::create::<Rook>(color));
+    let rook_right = (Position { x: 7, y: row }, PieceFactory::create::<Rook>(color));
     // Knights
-    let knights_left = (Position { x: 1, y: row }, PieceFactory::create::<Knight>(color), );
-    let knights_right = (Position { x: 6, y: row }, PieceFactory::create::<Knight>(color), );
+    let knight_left = (Position { x: 1, y: row }, PieceFactory::create::<Knight>(color));
+    let knight_right = (Position { x: 6, y: row }, PieceFactory::create::<Knight>(color));
     // Bishops
-    let bishop_left = (Position { x: 2, y: row }, PieceFactory::create::<Bishop>(color), );
-    let bishop_right = (Position { x: 5, y: row }, PieceFactory::create::<Bishop>(color), );
-    let mut pieces = vec![king, queen, rook_left, rook_right, knights_left, knights_right, bishop_left, bishop_right];
+    let bishop_left = (Position { x: 2, y: row }, PieceFactory::create::<Bishop>(color));
+    let bishop_right = (Position { x: 5, y: row }, PieceFactory::create::<Bishop>(color));
+
+    let mut pieces = vec![king, queen, rook_left, rook_right, knight_left, knight_right, bishop_left, bishop_right];
+    
     // Paws
     for x in 0..self.board.dimension.x {
       let pawn = (Position { x, y: row + offset }, PieceFactory::create::<Pawn>(color));

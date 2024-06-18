@@ -1,13 +1,7 @@
-mod game;
-mod board;
-mod pieces;
-mod decl_macros;
-
 use std::collections::HashMap;
-
-use game::{Game, Player};
-use board::{Board, Position, Movement};
-use pieces::{Piece, Color::{Black, White}};
+use chess::game::{Game, Player};
+use chess::board::{Board, Position, Movement};
+use chess::pieces::{Piece, Color::{Black, White}};
 
 fn main() {
   let player_a = Player { name: "Nacho", color: White };

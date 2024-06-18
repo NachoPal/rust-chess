@@ -79,6 +79,8 @@ impl<'a> Board<'a> {
   ) -> Self {
     let pieces = maybe_pieces.unwrap_or(vec![]);
 
+    // TODO: Check pieces_set are not out of bounds
+
     Self::do_add_pieces(positions, pieces_set, pieces);
 
     Board {
@@ -88,7 +90,6 @@ impl<'a> Board<'a> {
     }
   }
 
-  // pub fn add_pieces(&mut self, new_pieces: Vec<(Position, Box<impl Piece + 'static>)>) {
   pub fn add_pieces(&mut self, new_pieces: Vec<(Position, Box<dyn Piece>)>) {
     Self::do_add_pieces(self.positions, self.pieces_set, new_pieces);
   }
@@ -98,6 +99,7 @@ impl<'a> Board<'a> {
     pieces_set: &mut HashMap<Color, HashSet<Position>>,
     new_pieces: Vec<(Position, Box<dyn Piece>)>,
   ) {
+    // TODO: Check new_pieces are not out of bounds
     for (position, piece) in new_pieces {
       let piece_color = piece.color();
       if let Some(color) = pieces_set.get_mut(&piece_color) {
@@ -136,14 +138,17 @@ impl<'a> Board<'a> {
     if piece.is_king() && blocked_path {
       // TODO: Check if valid Castle movement
     }
-    println!("Movement {:?}", movement_kind);
-
+    // Check pawn special movements
+    if piece.is_pawn() {
+      // TODO: Check pawn special movements
+      // - Forward(2) when `moved = false`
+      // - kill piece
+      // - special movement
+    }
     Ok(true)
   }
 
   fn is_valid_move(&self, piece: &Box<dyn Piece>, movement_kind: &MovementKind) -> Result<bool, MovementError> {
-    let max_x = self.dimension.x as u32;
-    let max_y = self.dimension.y as u32;
     let valid_moves = if piece.as_any().downcast_ref::<King>().is_some() {
       vec![
         Vertical(Forward(1)),
@@ -156,43 +161,77 @@ impl<'a> Board<'a> {
         Diagonal((Backward(1), Left(1))),
       ]
     } else if piece.as_any().downcast_ref::<Queen>().is_some() {
-      vec![
-        Vertical(Forward(max_y)),
-        Vertical(Backward(max_y)),
-        Horizontal(Left(max_x)),
-        Horizontal(Right(max_x)),
-        Diagonal((Forward(max_y), Right(max_x))),
-        Diagonal((Forward(max_y), Left(max_x))),
-        Diagonal((Backward(max_y), Right(max_x))),
-        Diagonal((Backward(max_y), Left(max_x))),
-      ]
+      self.build_valid_moves(
+        |y| { vec![
+          Vertical(Forward(y)),
+          Vertical(Backward(y)),
+        ] },
+        |x| { vec![
+          Horizontal(Left(x)),
+          Horizontal(Right(x)),
+        ] },
+        |z| { vec![
+          Diagonal((Forward(z), Right(z))),
+          Diagonal((Forward(z), Left(z))),
+          Diagonal((Backward(z), Right(z))),
+          Diagonal((Backward(z), Left(z))),
+        ]} 
+      )
     } else if piece.as_any().downcast_ref::<Rook>().is_some() {
-      vec![
-        Vertical(Forward(max_y)),
-        Vertical(Backward(max_y)),
-        Horizontal(Left(max_x)),
-        Horizontal(Right(max_x)),
-      ]
+      self.build_valid_moves(
+        |y| { vec![
+          Vertical(Forward(y)),
+          Vertical(Backward(y)),
+        ] },
+        |x| { vec![
+          Horizontal(Left(x)),
+          Horizontal(Right(x)),
+        ] },
+        |_z| { vec![]} 
+      )
     } else if piece.as_any().downcast_ref::<Knight>().is_some() {
       vec![KnightMovement]
     } else if piece.as_any().downcast_ref::<Bishop>().is_some() {
-      vec![
-        Diagonal((Forward(max_y), Right(max_x))),
-        Diagonal((Forward(max_y), Left(max_x))),
-        Diagonal((Backward(max_y), Right(max_x))),
-        Diagonal((Backward(max_y), Left(max_x))),
-      ]
+      self.build_valid_moves(
+        |_y| { vec![] },
+        |_x| { vec![] },
+        |z| { vec![
+          Diagonal((Forward(z), Right(z))),
+          Diagonal((Forward(z), Left(z))),
+          Diagonal((Backward(z), Right(z))),
+          Diagonal((Backward(z), Left(z))),
+        ]}
+      )
     } else if piece.as_any().downcast_ref::<Pawn>().is_some() {
       vec![
         Vertical(Forward(1)),
         Vertical(Forward(2)),
-        Diagonal((Forward(1), Right(1))),
         Diagonal((Forward(1), Left(1))),
+        Diagonal((Forward(1), Right(1))),
       ]
     } else {
         vec![]
     };
-    valid_moves.binary_search(movement_kind).and_then(|_| Ok(true)).map_err(|_| MovementError::IllegalMovement)
+    ensure!(valid_moves.iter().any(|m| m == movement_kind), MovementError::IllegalMovement);
+    Ok(true)
+  }
+
+  fn build_valid_moves<Y, X, Z>(&self, fy: Y, fx: X, fz: Z) -> Vec<MovementKind>
+    where 
+      Y: Fn(u32) -> Vec<MovementKind>,
+      X: Fn(u32) -> Vec<MovementKind>,
+      Z: Fn(u32) -> Vec<MovementKind>,
+  {
+    let max_y = self.dimension.y as u32;
+    let max_x = self.dimension.x as u32;
+    let min = max_x.min(max_y);
+    
+    vec![
+      (1..=max_y).into_iter().map(|y| fy(y)).flatten().collect::<Vec<MovementKind>>(),
+      (1..=max_x).into_iter().map(|x| fx(x)).flatten().collect(),
+      (1..=min).into_iter().map(|z| fz(z)).flatten().collect(),
+    ].into_iter().flatten().collect()
+
   }
 
   fn pick_piece(&self, position: Position) -> Option<&Box<dyn Piece>> {
@@ -204,7 +243,7 @@ impl<'a> Board<'a> {
   }
 
   fn valid_target(&self, playing_color: Color, movement: &Movement) -> bool {
-    let target_square= self.pick_piece(movement.from);
+    let target_square= self.pick_piece(movement.to);
     // Either a rival piece or empty
     let rival_piece = target_square.is_some_and(|piece| piece.color() != playing_color);
     let empty_square = target_square.is_none();
@@ -251,7 +290,7 @@ impl<'a> Board<'a> {
 
   fn movement_kind(&self, playing_color: Color, movement: &Movement) -> Result<MovementKind, MovementError> {
     // Check piece moves
-    let no_move = movement.to.x == self.dimension.x && movement.to.y == self.dimension.y;
+    let no_move = movement.to.x == movement.from.x && movement.to.y == movement.from.y;
     ensure!(!no_move, MovementError::IllegalMovement);
 
     // Check it is not out of bounds

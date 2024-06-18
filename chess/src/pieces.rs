@@ -8,7 +8,7 @@ pub enum Color {
 	White,
 }
 
-pub trait Piece: Debug + PieceExt {
+pub trait Piece: Debug + AnyPiece {
   fn new(color: Color) -> Self where Self: Sized;
   fn color(&self) -> Color { Color::White }
   fn is_knight(&self) -> bool {
@@ -17,14 +17,17 @@ pub trait Piece: Debug + PieceExt {
   fn is_king(&self) -> bool {
     self.as_any().downcast_ref::<King>().is_some()
   }
+  fn is_pawn(&self) -> bool {
+    self.as_any().downcast_ref::<Pawn>().is_some()
+  }
 }
 
 // Extend the Piece trait to include a method to return &dyn Any
-pub trait PieceExt {
+pub trait AnyPiece {
   fn as_any(&self) -> &dyn Any;
 }
 
-impl<T: Piece + Any> PieceExt for T {
+impl<T: Piece + Any> AnyPiece for T {
   fn as_any(&self) -> &dyn Any {
       self
   }
