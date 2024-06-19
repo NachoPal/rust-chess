@@ -37,3 +37,13 @@ macro_rules! assert_ok {
 		assert_eq!($x, Ok($y));
 	};
 }
+
+/// Assert an expression returns an error specified.
+///
+/// Used as `assert_err!(expression_to_assert, expected_error_expression)`
+#[macro_export]
+macro_rules! assert_err {
+	( $x:expr , $y:expr $(,)? ) => {
+		assert_eq!($x, Err($y.into()));
+	};
+}

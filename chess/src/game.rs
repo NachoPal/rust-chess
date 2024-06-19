@@ -83,7 +83,7 @@ impl<'a> Game<'a> {
   }
 
   pub fn move_piece(&mut self, movement: Movement) -> Result<(), MovementError> {
-    self.board.move_piece(self.playing_color(), movement)
+    self.board.move_piece(self.playing_color(), &movement)
   }
 
   fn playing_color(&self) -> Color {

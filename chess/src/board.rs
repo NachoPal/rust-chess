@@ -9,7 +9,7 @@ use super::ensure;
 use self::MovementKind::{Diagonal, Horizontal, Vertical, Knight as KnightMovement};
 use self::Direction::{Forward, Backward, Left, Right, Unknown};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum MovementError {
 	OutOfBounds,
 	BlockedPath,
@@ -112,10 +112,25 @@ impl<'a> Board<'a> {
     }
   }
 
-  pub fn move_piece(&mut self, playing_color: Color, movement: Movement) -> Result<(), MovementError> {
+  pub fn move_piece(&mut self, playing_color: Color, movement: &Movement) -> Result<(), MovementError> {
     self.can_move(playing_color, &movement).and_then(|_| {
-      self.replace_square(&movement)
+      self.replace_square(movement)
     })
+  }
+
+  pub fn clean(&mut self) -> Result<(), MovementError> {
+    let mut positions_to_remove = Vec::new();
+
+    for color in [White, Black].iter() {
+        if let Some(set) = self.pieces_set.get(color) {
+            positions_to_remove.extend(set.iter().cloned());
+        }
+    }
+    for position in positions_to_remove {
+        self.remove_piece(&position)?;
+    }
+
+    Ok(())
   }
 
   fn can_move(&self, playing_color: Color, movement: &Movement) -> Result<bool, MovementError> {
@@ -128,7 +143,7 @@ impl<'a> Board<'a> {
     // Check if the movement is valid for that piece
     self.is_valid_move(piece, &movement_kind)?;
     // Check it the movement target id valid
-    ensure!(self.valid_target(playing_color, &movement), MovementError::IllegalMovement);
+    ensure!(self.valid_target(playing_color, &movement), MovementError::BlockedPath);
     // Check if the movement path is blocked
     let blocked_path = self.blocked_path(&movement, &movement_kind);
     if !piece.is_king() && !piece.is_knight() {
@@ -238,6 +253,17 @@ impl<'a> Board<'a> {
     self.positions.get(&position)
   }
 
+  pub fn remove_piece(&mut self, position: &Position) -> Result<Box<dyn Piece>, MovementError> {
+    let piece_origin = self.positions.remove(&position).ok_or(MovementError::NoPiece)?;
+    self.pieces_set.get_mut(&piece_origin.color()).expect("Color exists").remove(&position);
+    Ok(piece_origin)
+  }
+
+  #[cfg(test)]
+  pub fn test_remove_piece(&mut self, position: &Position) -> Result<Box<dyn Piece>, MovementError> {
+    self.remove_piece(position)
+  }
+
   fn square_is_empty(&self, position: Position) -> bool {
     self.pick_piece(position).is_none()
   }
@@ -276,8 +302,9 @@ impl<'a> Board<'a> {
 
   fn replace_square(&mut self, movement: &Movement) -> Result<(), MovementError> {
     // Remove piece from origin and update its `pieces_set`
-    let piece_origin = self.positions.remove(&movement.from).ok_or(MovementError::NoPiece)?;
-    self.pieces_set.get_mut(&piece_origin.color()).expect("Color exists").remove(&movement.from);
+    // let piece_origin = self.positions.remove(&movement.from).ok_or(MovementError::NoPiece)?;
+    // self.pieces_set.get_mut(&piece_origin.color()).expect("Color exists").remove(&movement.from);
+    let piece_origin = self.remove_piece(&movement.from)?;
     self.pieces_set.get_mut(&piece_origin.color()).expect("Color exists").insert(movement.to);
 
     // Insert origin piece in target and remove killed rival piece if existed in that square
