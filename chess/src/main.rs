@@ -12,7 +12,8 @@ fn main() {
   let pieces: Option<Vec<(Position, Box<dyn Piece>)>> = None;
   let mut positions = HashMap::new();
   let mut pieces_set = HashMap::new();
-  let mut board = Board::new(dimension, pieces, &mut positions, &mut pieces_set);
+  let mut pieces_dead = HashMap::new();
+  let mut board = Board::new(dimension, pieces, &mut positions, &mut pieces_set, &mut pieces_dead);
 
   let mut game = Game::new(&mut board, (player_a, player_b));
 

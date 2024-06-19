@@ -68,6 +68,7 @@ pub struct Board<'a> {
   pub dimension: Position,
 	pub positions: &'a mut HashMap<Position, Box<dyn Piece>>,
 	pub pieces_set: &'a mut HashMap<Color, HashSet<Position>>,
+	pub pieces_dead: &'a mut HashMap<Color, Vec<Box<dyn Piece>>>
 }
 
 impl<'a> Board<'a> {
@@ -76,10 +77,17 @@ impl<'a> Board<'a> {
     maybe_pieces: Option<Vec<(Position, Box<dyn Piece>)>>,
     positions: &'a mut HashMap<Position, Box<dyn Piece>>,
     pieces_set: &'a mut HashMap<Color, HashSet<Position>>,
+    pieces_dead: &'a mut HashMap<Color, Vec<Box<dyn Piece>>>
   ) -> Self {
     let pieces = maybe_pieces.unwrap_or(vec![]);
 
     // TODO: Check pieces_set are not out of bounds
+
+    // Initialize `pieces_set` and `piece_dead` in case either `White` and `Black` do not exist
+    if pieces_set.get(&White).is_none() { pieces_set.insert(White, HashSet::new()); }
+    if pieces_set.get(&Black).is_none() { pieces_set.insert(Black, HashSet::new()); }
+    if pieces_dead.get(&White).is_none() { pieces_dead.insert(White, Vec::new()); }
+    if pieces_dead.get(&Black).is_none() { pieces_dead.insert(Black, Vec::new()); }
 
     Self::do_add_pieces(positions, pieces_set, pieces);
 
@@ -87,6 +95,7 @@ impl<'a> Board<'a> {
       dimension,
       positions,
       pieces_set,
+      pieces_dead,
     }
   }
 
@@ -100,6 +109,7 @@ impl<'a> Board<'a> {
     new_pieces: Vec<(Position, Box<dyn Piece>)>,
   ) {
     // TODO: Check new_pieces are not out of bounds
+    // TODO: Check a piece does not exist already in that Position
     for (position, piece) in new_pieces {
       let piece_color = piece.color();
       if let Some(color) = pieces_set.get_mut(&piece_color) {
@@ -161,6 +171,10 @@ impl<'a> Board<'a> {
       // - special movement
     }
     Ok(true)
+  }
+
+  pub fn dead_pieces(&self, color: Color) -> &Vec<Box<dyn Piece>> {
+    self.pieces_dead.get(&color).expect("Color exists")
   }
 
   fn is_valid_move(&self, piece: &Box<dyn Piece>, movement_kind: &MovementKind) -> Result<bool, MovementError> {
@@ -310,6 +324,7 @@ impl<'a> Board<'a> {
     // Insert origin piece in target and remove killed rival piece if existed in that square
     if let Some(killed_piece) = self.positions.insert(movement.to, piece_origin) {
       self.pieces_set.get_mut(&killed_piece.color()).expect("Color exists").remove(&movement.to);
+      self.pieces_dead.get_mut(&killed_piece.color()).expect("Color exists").push(killed_piece);
     }
 
     Ok(())
