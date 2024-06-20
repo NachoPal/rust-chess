@@ -134,7 +134,9 @@ impl<'a> Board<'a> {
     for color in [White, Black].iter() {
         if let Some(set) = self.pieces_set.get(color) {
             positions_to_remove.extend(set.iter().cloned());
+            self.pieces_set.insert(*color, HashSet::new());
         }
+        self.pieces_dead.insert(*color, Vec::new());
     }
     for position in positions_to_remove {
         self.remove_piece(&position)?;
