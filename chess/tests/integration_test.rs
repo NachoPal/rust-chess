@@ -22,7 +22,7 @@ fn create_game<'a>(board: &'a mut Board<'a>) -> Game<'a> {
   Game::new(board, (player_a, player_b))
 }
 
-fn add_pieces_move_and_clean<T: Piece + 'static>(
+fn add_pieces_and_move<T: Piece + 'static>(
   game: &mut Game,
   init_position: Position,
   dest_position: Position,
@@ -35,48 +35,51 @@ fn add_pieces_move_and_clean<T: Piece + 'static>(
   }
 
   game.board.add_pieces(pieces);
-  let result = game.board.move_piece(White, &movement);
-
-  // Remove pieces from board
-  assert_ok!(game.board.clean());
-
-  result
+  game.board.move_piece(White, &movement)
 }
 
 // HORIZONTAL movement helpers
-fn test_horizontal_right<T: Piece + 'static>(game: &mut Game, max: i32, maybe_blocker: Option<(Position, Color)>) -> Result<(), MovementError> {
+fn test_horizontal_right<T: Piece + 'static>(game: &mut Game, max: i32, maybe_blocker: Option<(Position, Color)>, clean: bool) -> Result<(), MovementError> {
   let init_position = Position { x: 0, y: 0 };
   let dest_position =  Position {x: max, y: 0 };
-  add_pieces_move_and_clean::<T>(game, init_position, dest_position, maybe_blocker)
+  let result = add_pieces_and_move::<T>(game, init_position, dest_position, maybe_blocker);
+  if clean { assert_ok!(game.board.clean()); };
+  result
 }
 
-fn test_horizontal_left<T: Piece + 'static>(game: &mut Game, max: i32, maybe_blocker: Option<(Position, Color)>) -> Result<(), MovementError> {
+fn test_horizontal_left<T: Piece + 'static>(game: &mut Game, max: i32, maybe_blocker: Option<(Position, Color)>, clean: bool) -> Result<(), MovementError> {
   let init_position = Position { x: max, y: 0 };
   let dest_position =  Position {x: 0, y: 0 };
-  add_pieces_move_and_clean::<T>(game, init_position, dest_position, maybe_blocker)
+  let result = add_pieces_and_move::<T>(game, init_position, dest_position, maybe_blocker);
+  if clean { assert_ok!(game.board.clean()); };
+  result
 }
 
-fn test_vertical_forward<T: Piece + 'static>(game: &mut Game, max: i32, maybe_blocker: Option<(Position, Color)>) -> Result<(), MovementError> {
+fn test_vertical_forward<T: Piece + 'static>(game: &mut Game, max: i32, maybe_blocker: Option<(Position, Color)>, clean: bool) -> Result<(), MovementError> {
   let init_position = Position { x: 0, y: 0 };
   let dest_position =  Position {x: 0, y: max };
-  add_pieces_move_and_clean::<T>(game, init_position, dest_position, maybe_blocker)
+  let result = add_pieces_and_move::<T>(game, init_position, dest_position, maybe_blocker);
+  if clean { assert_ok!(game.board.clean()); };
+  result
 }
 
-fn test_vertical_backward<T: Piece + 'static>(game: &mut Game, max: i32, maybe_blocker: Option<(Position, Color)>) -> Result<(), MovementError> {
+fn test_vertical_backward<T: Piece + 'static>(game: &mut Game, max: i32, maybe_blocker: Option<(Position, Color)>, clean: bool) -> Result<(), MovementError> {
   let init_position = Position { x: 0, y: max };
   let dest_position =  Position {x: 0, y: 0 };
-  add_pieces_move_and_clean::<T>(game, init_position, dest_position, maybe_blocker)
+  let result = add_pieces_and_move::<T>(game, init_position, dest_position, maybe_blocker);
+  if clean { assert_ok!(game.board.clean()); };
+  result
 }
 
 fn horizontal_vertical_movements<T: Piece + 'static, F>(game: &mut Game, max_dimension_x: i32, max_dimension_y: i32, min_dimension: i32, assertion: F) where F: Fn(Result<(), MovementError>) -> () {
   (min_dimension..=max_dimension_x).into_iter().for_each(|i| {
-    assertion(test_horizontal_right::<T>(game, i, None));
-    assertion(test_horizontal_left::<T>(game, i, None));
+    assertion(test_horizontal_right::<T>(game, i, None, true));
+    assertion(test_horizontal_left::<T>(game, i, None, true));
   });
 
   (min_dimension..=max_dimension_y).into_iter().for_each(|i| {
-    assertion(test_vertical_forward::<T>(game, i, None));
-    assertion(test_vertical_backward::<T>(game, i, None));
+    assertion(test_vertical_forward::<T>(game, i, None, true));
+    assertion(test_vertical_backward::<T>(game, i, None, true));
   });
 }
 
@@ -91,63 +94,106 @@ fn fail_if_horizontal_vertical_path_blocked<T: Piece + 'static, F, G>(
   (1..=max_dimension_x).into_iter().for_each(|i| {
     let blocker = Some((Position { x: i, y: 0 }, blocker_color));
     if i != max_dimension_x {
-      assert_blocked_path(test_horizontal_right::<T>(game, max_dimension_x, blocker));
+      assert_blocked_path(test_horizontal_right::<T>(game, max_dimension_x, blocker, true));
     } else {
-      assert_blocked_target(test_horizontal_right::<T>(game, max_dimension_x, blocker), game);
+      assert_blocked_target(test_horizontal_right::<T>(game, max_dimension_x, blocker, false), game);
+      assert_ok!(game.board.clean());
     }
   });
 
   (0..=max_dimension_x-1).into_iter().for_each(|i| {
     let blocker = Some((Position { x: i, y: 0 }, blocker_color));
     if i != 0 {
-      assert_blocked_path(test_horizontal_left::<T>(game, max_dimension_x, blocker));
+      assert_blocked_path(test_horizontal_left::<T>(game, max_dimension_x, blocker, true));
     } else {
-      assert_blocked_target(test_horizontal_left::<T>(game, max_dimension_x, blocker), game);
+      assert_blocked_target(test_horizontal_left::<T>(game, max_dimension_x, blocker, false), game);
+      assert_ok!(game.board.clean());
     }
   });
   
   (1..=max_dimension_y).into_iter().for_each(|i| {
     let blocker = Some((Position { x: 0, y: i }, blocker_color));
     if i != max_dimension_y {
-      assert_blocked_path(test_vertical_forward::<T>(game, max_dimension_y, blocker));
+      assert_blocked_path(test_vertical_forward::<T>(game, max_dimension_y, blocker, true));
     } else {
-      assert_blocked_target(test_vertical_forward::<T>(game, max_dimension_y, blocker), game);
+      assert_blocked_target(test_vertical_forward::<T>(game, max_dimension_y, blocker, false), game);
+      assert_ok!(game.board.clean());
     }
   });
 
   (0..=max_dimension_y-1).into_iter().for_each(|i| {
     let blocker = Some((Position { x: 0, y: i }, blocker_color));
     if i != 0 {
-      assert_blocked_path(test_vertical_backward::<T>(game, max_dimension_y, blocker));
+      assert_blocked_path(test_vertical_backward::<T>(game, max_dimension_y, blocker, true));
     } else {
-      assert_blocked_target(test_vertical_backward::<T>(game, max_dimension_y, blocker), game);
+      assert_blocked_target(test_vertical_backward::<T>(game, max_dimension_y, blocker, false), game);
+      assert_ok!(game.board.clean());
     }  
   });
+}
+
+fn horizontal_vertical_path_blocked_for_both_colors<T: Piece + 'static>(
+  game: &mut Game,
+  max_dimension_x: i32,
+  max_dimension_y: i32,
+  // blocker_color: Color,
+  // assert_blocked_path: F,
+  // assert_blocked_target: G,
+) {
+  // Same color blocker
+  let mut blocker_piece_color = White;
+  fail_if_horizontal_vertical_path_blocked::<T, _, _>(
+    game,
+    max_dimension_x,
+    max_dimension_y,
+    blocker_piece_color,
+    |res| { assert_err!(res, MovementError::BlockedPath); },
+    |res, _| { assert_err!(res, MovementError::BlockedPath); },
+  );
+
+  // Rival color blocker
+  blocker_piece_color = Black;
+  let rival_dead_pieces_before_len = game.board.dead_pieces(blocker_piece_color).len();
+  fail_if_horizontal_vertical_path_blocked::<T, _, _>(
+    game,
+    max_dimension_x,
+    max_dimension_y,
+    blocker_piece_color,
+    |res| { assert_err!(res, MovementError::BlockedPath); },
+    |res, game_after| {
+      // Rival piece is killed
+      assert_ok!(res);
+      let rival_dead_pieces_after = game_after.board.dead_pieces(blocker_piece_color);
+      // Rival dead pieces set is incremented by one
+      assert!(rival_dead_pieces_after.len() == rival_dead_pieces_before_len + 1);
+      assert!(rival_dead_pieces_after.last().expect("There is a piece").as_any().downcast_ref::<T>().is_some());
+    },
+  );
 }
 
 // DIAGONAL movement helpers
 fn test_diagonal_forward_right<T: Piece + 'static>(game: &mut Game, max: i32, maybe_blocker: Option<(Position, Color)>) -> Result<(), MovementError> {
   let init_position = Position { x: 0, y: 0 };
   let dest_position =  Position {x: max, y: max };
-  add_pieces_move_and_clean::<T>(game, init_position, dest_position, maybe_blocker)
+  add_pieces_and_move::<T>(game, init_position, dest_position, maybe_blocker)
 }
 
 fn test_diagonal_forward_left<T: Piece + 'static>(game: &mut Game, max: i32, maybe_blocker: Option<(Position, Color)>) -> Result<(), MovementError> {
   let init_position = Position { x: max, y: 0 };
   let dest_position =  Position {x: 0, y: max };
-  add_pieces_move_and_clean::<T>(game, init_position, dest_position, maybe_blocker)
+  add_pieces_and_move::<T>(game, init_position, dest_position, maybe_blocker)
 }
 
 fn test_diagonal_backward_right<T: Piece + 'static>(game: &mut Game, max: i32, maybe_blocker: Option<(Position, Color)>) -> Result<(), MovementError> {
   let init_position = Position { x: 0, y: max };
   let dest_position =  Position {x: max, y: 0 };
-  add_pieces_move_and_clean::<T>(game, init_position, dest_position, maybe_blocker)
+  add_pieces_and_move::<T>(game, init_position, dest_position, maybe_blocker)
 }
 
 fn test_diagonal_backward_left<T: Piece + 'static>(game: &mut Game, max: i32, maybe_blocker: Option<(Position, Color)>) -> Result<(), MovementError> {
   let init_position = Position { x: max, y: max };
   let dest_position =  Position {x: 0, y: 0 };
-  add_pieces_move_and_clean::<T>(game, init_position, dest_position, maybe_blocker)
+  add_pieces_and_move::<T>(game, init_position, dest_position, maybe_blocker)
 }
 
 fn diagonal_movements<T: Piece + 'static, F>(game: &mut Game, max_dimension_x: i32, max_dimension_y: i32, min_dimension: i32, assertion: F) where F: Fn(Result<(), MovementError>) -> () {
@@ -355,7 +401,7 @@ fn king_movements() {
 }
 
 #[test]
-fn rook_fail_if_path_blocked() {
+fn rook_movements_path_blocked() {
   let mut positions = HashMap::new();
   let mut pieces_set = HashMap::new();
   let mut pieces_dead = HashMap::new();
@@ -366,43 +412,11 @@ fn rook_fail_if_path_blocked() {
   let max_dimension_x = game.board.dimension.x;
   let max_dimension_y = game.board.dimension.y;
 
-  // Same color blocker
-  let mut blocker_piece_color = White;
-  fail_if_horizontal_vertical_path_blocked::<Rook, _, _>(
-    &mut game,
-    max_dimension_x,
-    max_dimension_y,
-    blocker_piece_color,
-    |res| { assert_err!(res, MovementError::BlockedPath); },
-    |res, _| { assert_err!(res, MovementError::BlockedPath); },
-  );
-
-  // Rival color blocker
-  blocker_piece_color = Black;
-  let rival_dead_pieces_before_len = game.board.dead_pieces(blocker_piece_color).len();
-  fail_if_horizontal_vertical_path_blocked::<Rook, _, _>(
-    &mut game,
-    max_dimension_x,
-    max_dimension_y,
-    blocker_piece_color,
-    |res| { assert_err!(res, MovementError::BlockedPath); },
-    |res, game_after| {
-      // Rival piece is killed
-      assert_ok!(res);
-      let rival_dead_pieces_after = game_after.board.dead_pieces(blocker_piece_color);
-      // Rival dead pieces set is incremented by one
-      // assert!(rival_dead_pieces_after.len() == rival_dead_pieces_before_len + 1);
-      println!("DEAD SET BEFORE {:?}", rival_dead_pieces_before_len);
-      println!("DEAD SET AFTER {:?}", rival_dead_pieces_after.len());
-      println!("ASSERT {:?}", rival_dead_pieces_after.len() == rival_dead_pieces_before_len + 1);
-      // The dead piece is of the expected type
-      // assert!(rival_dead_pieces_after.last().expect("There is a piece").as_any().downcast_ref::<Rook>().is_some());
-    },
-  );
+  horizontal_vertical_path_blocked_for_both_colors::<Queen>(&mut game, max_dimension_x, max_dimension_y);
 }
 
 #[test]
-fn bishop_fail_if_path_blocked() {
+fn bishop_movements_path_blocked() {
   let mut positions = HashMap::new();
   let mut pieces_set = HashMap::new();
   let mut pieces_dead = HashMap::new();
@@ -417,7 +431,7 @@ fn bishop_fail_if_path_blocked() {
 }
 
 #[test]
-fn queen_fail_if_path_blocked() {
+fn queen_movements_path_blocked() {
   let mut positions = HashMap::new();
   let mut pieces_set = HashMap::new();
   let mut pieces_dead = HashMap::new();
@@ -427,21 +441,13 @@ fn queen_fail_if_path_blocked() {
 
   let max_dimension_x = game.board.dimension.x;
   let max_dimension_y = game.board.dimension.y;
-  let mut blocker_piece_color = White;
 
-  fail_if_horizontal_vertical_path_blocked::<Queen, _, _>(
-    &mut game,
-    max_dimension_x,
-    max_dimension_y,
-    blocker_piece_color,
-    |res| { assert_err!(res, MovementError::BlockedPath); },
-    |res, game| { assert_err!(res, MovementError::BlockedPath); },
-  );
+  horizontal_vertical_path_blocked_for_both_colors::<Queen>(&mut game, max_dimension_x, max_dimension_y);
   fail_if_diagonal_path_blocked::<Queen>(&mut game, max_dimension_x, max_dimension_y);
 }
 
 #[test]
-fn king_fail_if_path_blocked() {
+fn king_movements_path_blocked() {
   let mut positions = HashMap::new();
   let mut pieces_set = HashMap::new();
   let mut pieces_dead = HashMap::new();
@@ -451,15 +457,7 @@ fn king_fail_if_path_blocked() {
 
   let max_dimension_x = 1;
   let max_dimension_y = 1;
-  let mut blocker_piece_color = White;
 
-  fail_if_horizontal_vertical_path_blocked::<King, _, _>(
-    &mut game,
-    max_dimension_x,
-    max_dimension_y,
-    blocker_piece_color,
-    |res| { assert_err!(res, MovementError::BlockedPath); },
-    |res, game| { assert_err!(res, MovementError::BlockedPath); },
-  );
+  horizontal_vertical_path_blocked_for_both_colors::<King>(&mut game, max_dimension_x, max_dimension_y);
   fail_if_diagonal_path_blocked::<King>(&mut game, max_dimension_x, max_dimension_y);
 }
