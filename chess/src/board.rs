@@ -180,7 +180,7 @@ impl<'a> Board<'a> {
   }
 
   fn is_valid_move(&self, piece: &Box<dyn Piece>, movement_kind: &MovementKind) -> Result<bool, MovementError> {
-    let valid_moves = if piece.as_any().downcast_ref::<King>().is_some() {
+    let valid_moves = if piece.is_king() {
       vec![
         Vertical(Forward(1)),
         Vertical(Backward(1)),
@@ -191,7 +191,7 @@ impl<'a> Board<'a> {
         Diagonal((Backward(1), Right(1))),
         Diagonal((Backward(1), Left(1))),
       ]
-    } else if piece.as_any().downcast_ref::<Queen>().is_some() {
+    } else if piece.is_queen() {
       self.build_valid_moves(
         |y| { vec![
           Vertical(Forward(y)),
@@ -208,7 +208,7 @@ impl<'a> Board<'a> {
           Diagonal((Backward(z), Left(z))),
         ]} 
       )
-    } else if piece.as_any().downcast_ref::<Rook>().is_some() {
+    } else if piece.is_rook() {
       self.build_valid_moves(
         |y| { vec![
           Vertical(Forward(y)),
@@ -220,9 +220,9 @@ impl<'a> Board<'a> {
         ] },
         |_z| { vec![]} 
       )
-    } else if piece.as_any().downcast_ref::<Knight>().is_some() {
+    } else if piece.is_knight() {
       vec![KnightMovement]
-    } else if piece.as_any().downcast_ref::<Bishop>().is_some() {
+    } else if piece.is_bishop() {
       self.build_valid_moves(
         |_y| { vec![] },
         |_x| { vec![] },
@@ -233,7 +233,7 @@ impl<'a> Board<'a> {
           Diagonal((Backward(z), Left(z))),
         ]}
       )
-    } else if piece.as_any().downcast_ref::<Pawn>().is_some() {
+    } else if piece.is_pawn() {
       vec![
         Vertical(Forward(1)),
         Vertical(Forward(2)),

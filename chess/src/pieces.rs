@@ -11,14 +11,44 @@ pub enum Color {
 pub trait Piece: Debug + AnyPiece {
   fn new(color: Color) -> Self where Self: Sized;
   fn color(&self) -> Color { Color::White }
-  fn is_knight(&self) -> bool {
-    self.as_any().downcast_ref::<Knight>().is_some()
-  }
   fn is_king(&self) -> bool {
     self.as_any().downcast_ref::<King>().is_some()
   }
+  fn is_queen(&self) -> bool {
+    self.as_any().downcast_ref::<Queen>().is_some()
+  }
+  fn is_rook(&self) -> bool {
+    self.as_any().downcast_ref::<Rook>().is_some()
+  }
+  fn is_bishop(&self) -> bool {
+    self.as_any().downcast_ref::<Bishop>().is_some()
+  }
+  fn is_knight(&self) -> bool {
+    self.as_any().downcast_ref::<Knight>().is_some()
+  }
   fn is_pawn(&self) -> bool {
     self.as_any().downcast_ref::<Pawn>().is_some()
+  }
+  fn symbol(&self) -> char {
+    let mut symbol = if self.is_king() {
+      'K'
+    } else if self.is_queen() {
+      'Q'
+    } else if self.is_rook() {
+      'R'
+    } else if self.is_bishop() {
+      'B'
+    } else if self.is_knight() {
+      'N'
+    } else if self.is_pawn() {
+      'P' 
+    } else { unreachable!() };
+
+    if self.color() == Color::Black {
+      let symbol_string = symbol.to_lowercase().collect::<String>();
+      symbol = symbol_string.chars().next().unwrap();
+    }
+    symbol
   }
 }
 

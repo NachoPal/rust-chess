@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 derive_proc_macros = { path = "../derive_proc_macros" }
+colored = "2.0"
