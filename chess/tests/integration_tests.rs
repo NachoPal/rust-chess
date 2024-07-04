@@ -17,9 +17,9 @@ fn create_board<'a>(
 }
 
 fn create_game<'a>(board: &'a mut Board<'a>) -> Game<'a> {
-  let player_a = Player { name: "Nacho", color: White };
-  let player_b = Player { name: "Pepe", color: Black };
-  Game::new(board, (player_a, player_b))
+  // let player_a = Player { name: "Nacho", color: White };
+  // let player_b = Player { name: "Pepe", color: Black };
+  Game::new(board)
 }
 
 fn add_pieces_and_move<T: Piece + 'static>(

@@ -24,22 +24,21 @@ pub enum GameState {
 pub struct Game<'a> {
 	pub board: &'a mut Board<'a>,
 	pub state: GameState,
-	pub players: (Player<'a>, Player<'a>),
+	// pub players: (Player<'a>, Player<'a>),
 	pub turn: u32,
 }
 
 impl<'a> Game<'a> {
-  pub fn new(board: &'a mut Board<'a>, players: (Player<'a>, Player<'a>)) -> Self {
+  pub fn new(board: &'a mut Board<'a>) -> Self {
     Game {
       board,
       state: GameState::Ready,
-      players,
       turn: 0,
     }
   }
 
   pub fn ask_movement(&self) -> Result<Movement, MovementError> {
-    print!("{}, your turn:", self.current_player_name());
+    print!("{:?}, your turn:", self.playing_color());
     // Flush the standard output to ensure the prompt is shown before reading input
     io::stdout().flush().unwrap();
 
@@ -149,68 +148,6 @@ impl<'a> Game<'a> {
     if self.turn%2 == 0 { White } else { Black }
   }
 
-  fn current_player_name(&self) -> String {
-    match self.playing_color() {
-      White => self.players.0.name.to_owned(),
-      Black => self.players.1.name.to_owned(),
-    }
-  }
-
-//   pub fn print_board(&self) {
-//     use colored::*;
-//     let x_max = self.board.dimension.x;
-//     let y_max = self.board.dimension.y;
-//     let mut board:Vec<Vec<char>> = Vec::new();
-//     let mut left_numbers: Vec<usize> = (0..=y_max as usize).collect();
-//     let mut bottom_letters: Vec<usize> = (0..=x_max as usize).collect();
-
-//     for y in 0..=y_max {
-//       let mut row = Vec::new();
-//       for x in 0..=x_max {
-//         let position = Position { x: x as i32, y: y as i32 };
-//         let piece = self.board.positions.get(&position).map_or(' ', |p| p.symbol() );
-//         row.push(piece);
-//       }
-//       board.push(row);
-//     }
-
-//     if self.playing_color() == White { 
-//       board.reverse();
-//       // for y in 0..=y_max {
-//       //   board[y as usize].reverse();
-//       // }
-//     }
-//     if self.playing_color() == Black {
-//       left_numbers.reverse();
-//       bottom_letters.reverse();
-//       for y in 0..=y_max {
-//         board[y as usize].reverse();
-//       }
-//     }
-
-//     for y in 0..=y_max {
-//         // Print left numbers
-//         print!("{} ", left_numbers[(y_max - y) as usize] + 1);
-//         for x in 0..=x_max {
-//             let square = board[y as usize][x as usize];
-//             if (x + y) % 2 == 0 {
-//                 print!("{}", format!(" {} ", square).white().on_black());
-//             } else {
-//                 print!("{}", format!(" {} ", square).black().on_white());
-//             }
-//         }
-//         println!();
-//     }
-
-//     // Print bottom letters
-//     print!("  ");
-//     for x in bottom_letters {
-//         print!(" {} ", (b'a' + x as u8) as char);
-//     }
-//     println!();
-//   }
-// }
-
   pub fn print_board(&self) -> String {
     use colored::*;
     let mut result : Vec<String> = Vec::new();
@@ -232,9 +169,6 @@ impl<'a> Game<'a> {
 
     if self.playing_color() == White { 
       board.reverse();
-      // for y in 0..=y_max {
-      //   board[y as usize].reverse();
-      // }
     }
     if self.playing_color() == Black {
       left_numbers.reverse();

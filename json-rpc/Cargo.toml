@@ -1,5 +1,5 @@
 [package]
-name = "rpc-json"
+name = "json-rpc"
 version = "0.1.0"
 edition = "2021"
 

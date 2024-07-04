@@ -66,6 +66,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 name = "chess-client"
 version = "0.1.0"
 dependencies = [
+ "json-rpc",
+ "serde",
+ "serde_json",
  "tokio",
 ]
 
@@ -75,6 +78,7 @@ version = "0.1.0"
 dependencies = [
  "colored",
  "derive_proc_macros",
+ "serde",
  "tokio",
 ]
 
@@ -85,6 +89,7 @@ dependencies = [
  "chess-lib",
  "colored",
  "derive_proc_macros",
+ "json-rpc",
  "serde",
  "serde_json",
  "tokio",
@@ -126,6 +131,14 @@ name = "itoa"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49f1f14873335454500d59611f1cf4a4b0f786f9ac11f4312a78e4cf2566695b"
+
+[[package]]
+name = "json-rpc"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "lazy_static"
@@ -248,14 +261,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c82cf8cff14456045f55ec4241383baeff27af886adb72ffb2162f99911de0fd"
 dependencies = [
  "bitflags",
-]
-
-[[package]]
-name = "rpc-json"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
 ]
 
 [[package]]

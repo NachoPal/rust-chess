@@ -1,14 +1,15 @@
 use std::any::Any;
 use std::fmt::Debug;
 use derive_proc_macros::Piece;
+use serde::{Deserialize, Serialize};
 
-#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
+#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum Color {
 	Black,
 	White,
 }
 
-pub trait Piece: Debug + AnyPiece {
+pub trait Piece: Debug + AnyPiece + Send + Sync {
   fn new(color: Color) -> Self where Self: Sized;
   fn color(&self) -> Color { Color::White }
   fn is_king(&self) -> bool {
