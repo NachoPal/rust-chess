@@ -1,5 +1,6 @@
 use std::io::{self, Write};
 use crate::pieces::Knight;
+use super::ensure;
 
 use super::board::{Board, Movement, MovementError, Position};
 use super::pieces::{
@@ -37,16 +38,54 @@ impl<'a> Game<'a> {
     }
   }
 
-  pub fn ask_movement(&self) {
-    print!("{:?}, your turn:", self.current_player());
+  pub fn ask_movement(&self) -> Result<Movement, MovementError> {
+    print!("{}, your turn:", self.current_player_name());
     // Flush the standard output to ensure the prompt is shown before reading input
     io::stdout().flush().unwrap();
 
-    let mut movement = String::new();
-    io::stdin().read_line(&mut movement).expect("Failed to read line");
+    let mut movement_string = String::new();
+    io::stdin().read_line(&mut movement_string).expect("Failed to read line");
 
     // Remove the newline character from the end of the input
-    movement.trim().to_string();
+    // movement_string.trim().to_string();
+    self.translate_movement(movement_string.trim().to_string())
+    // self.move_piece(movement)?;
+    // Ok(())
+  }
+
+  fn translate_movement(&self, movement: String) -> Result<Movement, MovementError> {
+    ensure!(movement.len() == 4, MovementError::WrongCommand(movement));
+
+    let from = &movement[0..2];
+    let to = &movement[2..4];
+
+    let from_x_char = &from.split_at(1).0.chars().next().expect("exists");
+    let from_y_char = &from.split_at(1).1.chars().next().expect("exists");
+    let to_x_char = &to.split_at(1).0.chars().next().expect("exists");
+    let to_y_char = &to.split_at(1).1.chars().next().expect("exists");
+
+    let from_x  = match from_x_char {
+        'a'..='z' => Some(*from_x_char as i32 - 'a' as i32),
+        'A'..='Z' => Some(*from_x_char as i32 - 'A' as i32),
+        _ => None, // Return None if the character is not in the range a-z or A-Z
+    }.ok_or(MovementError::WrongCommand(movement.clone()))?;
+    
+    let to_x  = match to_x_char {
+      'a'..='z' => Some(*to_x_char as i32 - 'a' as i32),
+      'A'..='Z' => Some(*to_x_char as i32 - 'A' as i32),
+      _ => None, // Return None if the character is not in the range a-z or A-Z
+    }.ok_or(MovementError::WrongCommand(movement.clone()))?;
+
+    let from_y = from_y_char.to_digit(10).ok_or(MovementError::WrongCommand(movement.clone()))? as i32;
+    let to_y = to_y_char.to_digit(10).ok_or(MovementError::WrongCommand(movement))? as i32;
+
+    Ok(
+      Movement {
+        from: Position { x: from_x, y: from_y - 1 },
+        to: Position { x: to_x, y: to_y - 1 },
+      }
+    )
+
   }
 
   pub fn set_board(&mut self) {
@@ -101,25 +140,85 @@ impl<'a> Game<'a> {
   }
 
   pub fn move_piece(&mut self, movement: Movement) -> Result<(), MovementError> {
-    self.board.move_piece(self.playing_color(), &movement)
+    let res = self.board.move_piece(self.playing_color(), &movement);
+    println!("{:?}", self.board.positions);
+    res
   }
 
   fn playing_color(&self) -> Color {
     if self.turn%2 == 0 { White } else { Black }
   }
 
-  fn current_player(&self) -> String {
+  fn current_player_name(&self) -> String {
     match self.playing_color() {
       White => self.players.0.name.to_owned(),
       Black => self.players.1.name.to_owned(),
     }
   }
 
-  pub fn print_board(&self) {
+//   pub fn print_board(&self) {
+//     use colored::*;
+//     let x_max = self.board.dimension.x;
+//     let y_max = self.board.dimension.y;
+//     let mut board:Vec<Vec<char>> = Vec::new();
+//     let mut left_numbers: Vec<usize> = (0..=y_max as usize).collect();
+//     let mut bottom_letters: Vec<usize> = (0..=x_max as usize).collect();
+
+//     for y in 0..=y_max {
+//       let mut row = Vec::new();
+//       for x in 0..=x_max {
+//         let position = Position { x: x as i32, y: y as i32 };
+//         let piece = self.board.positions.get(&position).map_or(' ', |p| p.symbol() );
+//         row.push(piece);
+//       }
+//       board.push(row);
+//     }
+
+//     if self.playing_color() == White { 
+//       board.reverse();
+//       // for y in 0..=y_max {
+//       //   board[y as usize].reverse();
+//       // }
+//     }
+//     if self.playing_color() == Black {
+//       left_numbers.reverse();
+//       bottom_letters.reverse();
+//       for y in 0..=y_max {
+//         board[y as usize].reverse();
+//       }
+//     }
+
+//     for y in 0..=y_max {
+//         // Print left numbers
+//         print!("{} ", left_numbers[(y_max - y) as usize] + 1);
+//         for x in 0..=x_max {
+//             let square = board[y as usize][x as usize];
+//             if (x + y) % 2 == 0 {
+//                 print!("{}", format!(" {} ", square).white().on_black());
+//             } else {
+//                 print!("{}", format!(" {} ", square).black().on_white());
+//             }
+//         }
+//         println!();
+//     }
+
+//     // Print bottom letters
+//     print!("  ");
+//     for x in bottom_letters {
+//         print!(" {} ", (b'a' + x as u8) as char);
+//     }
+//     println!();
+//   }
+// }
+
+  pub fn print_board(&self) -> String {
     use colored::*;
+    let mut result : Vec<String> = Vec::new();
     let x_max = self.board.dimension.x;
     let y_max = self.board.dimension.y;
     let mut board:Vec<Vec<char>> = Vec::new();
+    let mut left_numbers: Vec<usize> = (0..=y_max as usize).collect();
+    let mut bottom_letters: Vec<usize> = (0..=x_max as usize).collect();
 
     for y in 0..=y_max {
       let mut row = Vec::new();
@@ -131,27 +230,41 @@ impl<'a> Game<'a> {
       board.push(row);
     }
 
-    if self.playing_color() == White { board.reverse(); }
+    if self.playing_color() == White { 
+      board.reverse();
+      // for y in 0..=y_max {
+      //   board[y as usize].reverse();
+      // }
+    }
+    if self.playing_color() == Black {
+      left_numbers.reverse();
+      bottom_letters.reverse();
+      for y in 0..=y_max {
+        board[y as usize].reverse();
+      }
+    }
 
     for y in 0..=y_max {
         // Print left numbers
-        print!("{} ", y_max + 1 - y);
+        result.push(format!("{} ", left_numbers[(y_max - y) as usize] + 1));
         for x in 0..=x_max {
             let square = board[y as usize][x as usize];
             if (x + y) % 2 == 0 {
-                print!("{}", format!(" {} ", square).white().on_black());
+                result.push(format!("{}", format!(" {} ", square).white().on_black()));
             } else {
-                print!("{}", format!(" {} ", square).black().on_white());
+                result.push(format!("{}", format!(" {} ", square).black().on_white()));
             }
         }
-        println!();
+        result.push(format!("\n"));
     }
 
     // Print bottom letters
-    print!("  ");
-    for x in 0..=x_max {
-        print!(" {} ", (b'a' + x as u8) as char);
+    result.push(format!("  "));
+    for x in bottom_letters {
+        result.push(format!(" {} ", (b'a' + x as u8) as char));
     }
-    println!();
+    result.push(format!("\n"));
+
+    result.iter().flat_map(|s| s.chars()).collect()
   }
 }

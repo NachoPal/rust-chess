@@ -16,6 +16,7 @@ pub enum MovementError {
 	IllegalMovement,
 	Check,
   NoPiece,
+  WrongCommand(String),
   WrongPiece(Color),
 }
 
@@ -28,6 +29,7 @@ impl fmt::Display for MovementError {
           MovementError::Check => write!(f, "That would be check"),
           MovementError::NoPiece => write!(f, "There is not any piece in that square"),
           MovementError::WrongPiece(color) => write!(f, "You can not play {:?} pieces", color),
+          MovementError::WrongCommand(command) => write!(f, "{:?} is not a valid movement command", command),
         }
     }
 }
@@ -306,10 +308,17 @@ impl<'a> Board<'a> {
         })
       },
       Diagonal((vertical_directon, horizontal_direction)) => {
-        Self::path_range(vertical_directon, movement.from.y, movement.to.y).any(|y| {
-          Self::path_range(horizontal_direction, movement.from.x, movement.to.x).any(|x| {
-            !self.square_is_empty(Position { x, y })
-          })
+        println!("VERTICAL DIRECTION {:?}", vertical_directon);
+        println!("HORIZONTAL DIRECTION {:?}", horizontal_direction);
+        Self::path_range(vertical_directon, movement.from.y, movement.to.y).enumerate().any(|(i, y)| {
+          // Self::path_range(horizontal_direction, movement.from.x, movement.to.x).any(|x| {
+          //   let res = !self.square_is_empty(Position { x, y });
+          //   println!("X: {:?}, Y: {:?}", x, y);
+          //   res
+          // })
+          let x = Self::path_range(horizontal_direction, movement.from.x, movement.to.x).rev().collect::<Vec<i32>>()[i];
+          println!("X: {:?}, Y: {:?}", x, y);
+          !self.square_is_empty(Position { x, y })
         })
       },
       _ => false
@@ -414,6 +423,8 @@ impl<'a> Board<'a> {
 
   fn path_range(direction: &Direction, from: i32, to: i32) -> std::ops::Range<i32> {
     match direction {
+      // Forward(_) | Right(_)=> from + 1..to,
+      // Backward(_) | Left(_) => to + 1..from,
       Forward(_) | Right(_)=> from + 1..to,
       Backward(_) | Left(_) => to + 1..from,
       _ => from..to

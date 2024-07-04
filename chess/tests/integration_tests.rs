@@ -1,8 +1,8 @@
-use chess::game::{Game, Player};
-use chess::board::{Board, Movement, Position, MovementError};
-use chess::pieces::Bishop;
-use chess::pieces::{Piece, Color::{self, Black, White}, Pawn, Rook, Queen, King, PieceFactory};
-use chess::{assert_ok, assert_err};
+use chess_lib::game::{Game, Player};
+use chess_lib::board::{Board, Movement, Position, MovementError};
+use chess_lib::pieces::Bishop;
+use chess_lib::pieces::{Piece, Color::{self, Black, White}, Pawn, Rook, Queen, King, PieceFactory};
+use chess_lib::{assert_ok, assert_err};
 use std::collections::{HashSet, HashMap};
 
 fn create_board<'a>(

@@ -3,5 +3,8 @@ resolver = "2"
 
 members = [
   "chess",
-  "derive_proc_macros",
+  "server",
+  "client",
+  "json-rpc",
+  "derive-proc-macros",
   ]

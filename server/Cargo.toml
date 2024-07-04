@@ -1,5 +1,5 @@
 [package]
-name = "chess-lib"
+name = "chess-server"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,3 +9,6 @@ edition = "2021"
 derive_proc_macros = { path = "../derive-proc-macros" }
 colored = "2.0"
 tokio = { version = "1", features = ["full"] }
+chess-lib = { path = "../chess" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
