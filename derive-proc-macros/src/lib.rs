@@ -1,8 +1,9 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
+use proc_macro2::Span;
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, ItemStruct};
+use syn::{parse_macro_input, DeriveInput, LifetimeParam, ItemStruct, Lifetime};
 
 #[proc_macro_derive(Piece)]
 pub fn new_derive(input: TokenStream) -> TokenStream {
@@ -37,33 +38,36 @@ pub fn new_derive(input: TokenStream) -> TokenStream {
 pub fn rpc(_attr: TokenStream, item: TokenStream) -> TokenStream {
     // Parse the input tokens into a syntax tree
     let input = parse_macro_input!(item as ItemStruct);
+    let input_ext = input.clone();
 
-    // Get the function's name
-    // let name = &input.sig.ident;
     let ident = &input.ident;
-    let generics = &input.generics.params;
+    let generics = &input.generics;
+    let generics_ext = &mut input_ext.clone().generics;
+    let generics_params_ext = &mut generics_ext.params;
+    let rpc_lifetime = Lifetime::new("'rpc", Span::call_site());
+    generics_params_ext.push(syn::GenericParam::Lifetime(LifetimeParam::new(rpc_lifetime)));
 
     // Generate the new function body
     let gen = quote! {
         #input
 
         type Params = Vec<serde_json::Value>;
-        type MethodFunction<'a> = fn(&#ident<'a>, Params) -> json_rpc::Response;
+        type MethodFunction #generics = fn(&#ident #generics, Params) -> json_rpc::Response;
 
-        pub struct Rpc<'a> {
-          pub methods: HashMap<String, MethodFunction<'a>>,
-          pub ctx: &'a #ident<'a>,
+        pub struct Rpc #generics_ext {
+          pub methods: HashMap<String, MethodFunction #generics>,
+          pub ctx: &'rpc #ident #generics,
         }
 
-        impl<'a> Rpc<'a> {
-          pub fn new(ctx: &'a #ident<'a>) -> Self {
+        impl #generics_ext Rpc #generics_ext {
+          pub fn new(ctx: &'rpc #ident #generics) -> Self {
             Self {
               methods: HashMap::new(),
               ctx,
             }
           }
 
-          pub fn register_method(&mut self, name: String, method: MethodFunction<'a>) {
+          pub fn register_method(&mut self, name: String, method: MethodFunction #generics) {
             self.methods.insert(name, method);
           }
 

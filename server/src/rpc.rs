@@ -10,7 +10,7 @@ fn password<Context>(ctx: &Context, params: Params) -> Response {
   }
 }
 
-pub(super) fn rpc<'a>(ctx: &'a Context<'a>) -> Rpc<'a> {
+pub(super) fn rpc<'a, 'rpc>(ctx: &'a Context<'a>) -> Rpc<'a, 'rpc> {
   let mut rpc = Rpc::new(ctx);
   rpc.register_method("password".to_string(), password);
   rpc
