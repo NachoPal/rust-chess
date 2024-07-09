@@ -109,8 +109,10 @@ dependencies = [
 name = "derive_proc_macros"
 version = "0.1.0"
 dependencies = [
+ "json-rpc",
  "proc-macro2",
  "quote",
+ "serde_json",
  "syn",
 ]
 

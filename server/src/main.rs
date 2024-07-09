@@ -4,7 +4,7 @@ use std::io::{self, Write};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use json_rpc::{Rpc, Response, Request};
+use derive_proc_macros::rpc;
 
 mod listener;
 use listener::tcp_listener;
@@ -22,6 +22,7 @@ pub fn clean_terminal() {
   print!("{esc}c", esc = 27 as char);
 }
 
+#[rpc]
 struct Context<'a> {
   pub passwords: &'a HashMap<String, Color>,
   pub game: &'a Game<'a>,
@@ -51,14 +52,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     game: &game,
   };
 
-  let rpc: Arc<Rpc<Context>> = Arc::new(rpc(&ctx));
+  let rpc: Arc<Rpc> = Arc::new(rpc(&ctx));
 
   let listener = tcp_listener().await?;
 
   loop {
     // Accept a new socket
     let (socket, _addr) = listener.accept().await?;
-    proccess::<Context>(socket, rpc.clone());
+    proccess(socket, rpc.clone());
   }
 
   while game.is_ongoing() {

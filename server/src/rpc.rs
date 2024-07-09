@@ -1,5 +1,6 @@
-use json_rpc::{Rpc, Response, Params};
+use json_rpc::{Response, Params};
 use serde_json::Value;
+use super::{Rpc, Context};
 
 fn password<Context>(ctx: &Context, params: Params) -> Response {
   Response::Success {
@@ -9,7 +10,7 @@ fn password<Context>(ctx: &Context, params: Params) -> Response {
   }
 }
 
-pub(super) fn rpc<Context: Send + std::marker::Sync>(ctx: &Context) -> Rpc<Context> {
+pub(super) fn rpc<'a>(ctx: &'a Context<'a>) -> Rpc<'a> {
   let mut rpc = Rpc::new(ctx);
   rpc.register_method("password".to_string(), password);
   rpc

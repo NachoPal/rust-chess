@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
+// pub use derive_proc_macros::rpc;
 
 pub type Params = Vec<Value>;
 
@@ -32,30 +33,30 @@ pub struct JsonRpcError {
   pub data: Option<Value>
 }
 
-type MethodFunction<Context> = fn(&Context, Params) -> Response;
+// type MethodFunction<Context> = fn(&Context, Params) -> Response;
 
-pub struct Rpc<'a, Context> {
-  pub methods: HashMap<String, MethodFunction<Context>>,
-  pub ctx: &'a Context,
-}
+// pub struct Rpc<'a, Context> {
+//   pub methods: HashMap<String, MethodFunction<Context>>,
+//   pub ctx: &'a Context,
+// }
 
-impl<'a, Context: Send + Sync> Rpc<'a, Context> {
-  pub fn new(ctx: &'a Context) -> Self {
-    Self {
-      methods: HashMap::new(),
-      ctx: ctx,
-    }
-  }
+// impl<'a, Context: Send + Sync> Rpc<'a, Context> {
+//   pub fn new(ctx: &'a Context) -> Self {
+//     Self {
+//       methods: HashMap::new(),
+//       ctx: ctx,
+//     }
+//   }
 
-  pub fn register_method(&mut self, name: String, method: MethodFunction<Context>) {
-    self.methods.insert(name, method);
-  }
+//   pub fn register_method(&mut self, name: String, method: MethodFunction<Context>) {
+//     self.methods.insert(name, method);
+//   }
 
-  pub fn call_method(&self, name: String, params: Params) -> Response {
-    if let Some(method) = self.methods.get(&name) {
-      return method(self.ctx, params)
-    } else {
-      Response::Error { jsonrpc: "2.0".to_string(), error: JsonRpcError { code: -1, message: "No method".to_string(), data: None }, id: 1 }
-    }
-  }
-}
+//   pub fn call_method(&self, name: String, params: Params) -> Response {
+//     if let Some(method) = self.methods.get(&name) {
+//       return method(self.ctx, params)
+//     } else {
+//       Response::Error { jsonrpc: "2.0".to_string(), error: JsonRpcError { code: -1, message: "No method".to_string(), data: None }, id: 1 }
+//     }
+//   }
+// }

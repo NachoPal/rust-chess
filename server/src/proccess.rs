@@ -1,9 +1,10 @@
 use std::sync::Arc;
 use tokio::net::TcpStream;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use json_rpc::{Rpc, Request};
+use json_rpc::{Request};
+use super::Rpc;
 
-pub (super) fn proccess<Context: Send + Sync>(mut socket: TcpStream, rpc: Arc<Rpc<Context>>) {
+pub (super) fn proccess<'a>(mut socket: TcpStream, rpc: Arc<Rpc<'a>>) {
   // Spawn a new task to handle the connection
   tokio::spawn(async move {
       let mut buf = [0; 1024];
