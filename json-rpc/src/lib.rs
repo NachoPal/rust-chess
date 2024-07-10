@@ -14,6 +14,7 @@ pub struct Request {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
 pub enum Response {
   Success {
     jsonrpc: String,

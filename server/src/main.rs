@@ -23,9 +23,9 @@ pub fn clean_terminal() {
 }
 
 #[rpc]
-struct Context<'a> {
-  pub passwords: &'a HashMap<String, Color>,
-  pub game: &'a Game<'a>,
+struct Context {
+  pub passwords: HashMap<String, Color>,
+  pub game: Game,
 }
 
 #[tokio::main]
@@ -34,25 +34,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let dimension = Position { x: 7, y: 7 };
 
   let pieces: Option<Vec<(Position, Box<dyn Piece>)>> = None;
-  let mut positions = HashMap::new();
-  let mut pieces_set = HashMap::new();
-  let mut pieces_dead = HashMap::new();
-  let mut board = Board::new(dimension, pieces, &mut positions, &mut pieces_set, &mut pieces_dead);
-  let mut game = Game::new(&mut board);
+  // let mut positions = HashMap::new();
+  // let mut pieces_set = HashMap::new();
+  // let mut pieces_dead = HashMap::new();
+  // let mut board = Board::new(dimension, pieces, &mut positions, &mut pieces_set, &mut pieces_dead);
+  let mut board = Board::new(dimension, pieces);
+  let mut game = Game::new(board);
 
   game.set_board();
   game.start();
 
-  let mut passwords: HashMap<String, Color> = HashMap::new();
+  let mut passwords = HashMap::new();
   passwords.insert("white".to_string(), Color::White);
   passwords.insert("black".to_string(), Color::Black);
 
   let ctx = Context {
-    passwords: &passwords,
-    game: &game,
+    passwords: passwords,
+    game: game,
   };
 
-  let rpc: Arc<Rpc> = Arc::new(rpc(&ctx));
+  let rpc = rpc(Arc::new(ctx));
 
   let listener = tcp_listener().await?;
 

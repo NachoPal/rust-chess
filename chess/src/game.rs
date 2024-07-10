@@ -21,15 +21,15 @@ pub enum GameState {
 	Ended,
 }
 
-pub struct Game<'a> {
-	pub board: &'a mut Board<'a>,
+pub struct Game {
+	pub board: Board,
 	pub state: GameState,
 	// pub players: (Player<'a>, Player<'a>),
 	pub turn: u32,
 }
 
-impl<'a> Game<'a> {
-  pub fn new(board: &'a mut Board<'a>) -> Self {
+impl Game {
+  pub fn new(board: Board) -> Self {
     Game {
       board,
       state: GameState::Ready,
@@ -68,7 +68,7 @@ impl<'a> Game<'a> {
         'A'..='Z' => Some(*from_x_char as i32 - 'A' as i32),
         _ => None, // Return None if the character is not in the range a-z or A-Z
     }.ok_or(MovementError::WrongCommand(movement.clone()))?;
-    
+
     let to_x  = match to_x_char {
       'a'..='z' => Some(*to_x_char as i32 - 'a' as i32),
       'A'..='Z' => Some(*to_x_char as i32 - 'A' as i32),

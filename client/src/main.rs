@@ -1,7 +1,7 @@
 use std::io::{self, Write};
 use tokio::net::TcpStream;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use json_rpc::Request;
+use json_rpc::{Request, Response};
 
 fn ask_for_password() -> String {
   print!("Enter the game password: ");
@@ -32,12 +32,18 @@ async fn main() -> io::Result<()> {
     // Write some data to the server
     let request_json = serde_json::to_string(&request).unwrap();
     stream.write_all(request_json.as_bytes()).await?;
-    println!("Sent: {:#?}", request_json);
 
     // Read the response from the server
-    let mut buf = vec![0; 1024];
+    let mut buf = vec![0; 90000];
     let n = stream.read(&mut buf).await?;
-    println!("Received: {:?}", &buf[..n]);
+    let response = serde_json::from_slice::<Response>(&buf[..n]).unwrap();
+
+    match response {
+      Response:: Success { result , .. } => {
+        print!("{}", result.as_str().unwrap());
+      }
+      _ => {},
+    }
 
     Ok(())
 }

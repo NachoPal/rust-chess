@@ -66,22 +66,26 @@ pub enum MovementKind {
 }
 
 #[derive(Debug)]
-pub struct Board<'a> {
+pub struct Board {
   pub dimension: Position,
-	pub positions: &'a mut HashMap<Position, Box<dyn Piece>>,
-	pub pieces_set: &'a mut HashMap<Color, HashSet<Position>>,
-	pub pieces_dead: &'a mut HashMap<Color, Vec<Box<dyn Piece>>>
+	pub positions: HashMap<Position, Box<dyn Piece>>,
+	pub pieces_set: HashMap<Color, HashSet<Position>>,
+	pub pieces_dead: HashMap<Color, Vec<Box<dyn Piece>>>
 }
 
-impl<'a> Board<'a> {
+impl Board {
   pub fn new(
     dimension: Position,
     maybe_pieces: Option<Vec<(Position, Box<dyn Piece>)>>,
-    positions: &'a mut HashMap<Position, Box<dyn Piece>>,
-    pieces_set: &'a mut HashMap<Color, HashSet<Position>>,
-    pieces_dead: &'a mut HashMap<Color, Vec<Box<dyn Piece>>>
+    // positions: &'a mut HashMap<Position, Box<dyn Piece>>,
+    // pieces_set: &'a mut HashMap<Color, HashSet<Position>>,
+    // pieces_dead: &'a mut HashMap<Color, Vec<Box<dyn Piece>>>
   ) -> Self {
     let pieces = maybe_pieces.unwrap_or(vec![]);
+
+    let mut positions = HashMap::new();
+    let mut pieces_set = HashMap::new();
+    let mut pieces_dead = HashMap::new();
 
     // TODO: Check pieces_set are not out of bounds
 
@@ -91,7 +95,7 @@ impl<'a> Board<'a> {
     if pieces_dead.get(&White).is_none() { pieces_dead.insert(White, Vec::new()); }
     if pieces_dead.get(&Black).is_none() { pieces_dead.insert(Black, Vec::new()); }
 
-    Self::do_add_pieces(positions, pieces_set, pieces);
+    Self::do_add_pieces(&mut positions, &mut pieces_set, pieces);
 
     Board {
       dimension,
@@ -102,7 +106,7 @@ impl<'a> Board<'a> {
   }
 
   pub fn add_pieces(&mut self, new_pieces: Vec<(Position, Box<dyn Piece>)>) {
-    Self::do_add_pieces(self.positions, self.pieces_set, new_pieces);
+    Self::do_add_pieces(&mut self.positions, &mut self.pieces_set, new_pieces);
   }
 
   fn do_add_pieces(
