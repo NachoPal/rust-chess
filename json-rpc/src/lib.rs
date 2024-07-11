@@ -1,5 +1,7 @@
+use std::fmt::{Display, Formatter};
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
+use colored::*;
 // pub use derive_proc_macros::rpc;
 
 pub const INVALID_PARAMS: i32 = -32602;
@@ -9,7 +11,7 @@ pub type Params = Vec<Value>;
 pub type Id = u32;
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Version(String);
+pub struct Version(String);
 
 impl Default for Version {
   fn default() -> Self {
@@ -96,6 +98,20 @@ impl Response {
       jsonrpc: Version::default(),
       error,
       id: id.unwrap_or_default()
+    }
+  }
+}
+
+impl Display for Response {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    match self.result() {
+      Ok((result, _)) => {
+        write!(f, "{}", result)
+      },
+      Err((err, _)) => {
+        let error_msg = format!("Error");
+        write!(f, "{}: {}", error_msg.red(), err.message)
+      }
     }
   }
 }

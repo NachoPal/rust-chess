@@ -8,7 +8,7 @@ fn password(ctx: Arc<Context>, params: Params) -> Response {
   match params.first() {
     Some(Value::String(pasword)) => {
       if let Some(color) = ctx.passwords.get(pasword) {
-        let result = json!(ctx.game.print_board());
+        let result = json!({ "color": color, "board": ctx.game.print_board() });
         Response::success(result, None)
       } else {
         let error = JsonRpcError { code: 1, message: "Incorrect password".to_string(), data: None };

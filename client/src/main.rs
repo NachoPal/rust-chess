@@ -1,18 +1,16 @@
 use std::io::{self, Write};
 use tokio::net::TcpStream;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use json_rpc::{Request, Response};
 
-fn ask_for_password() -> String {
-  print!("Enter the game password: ");
-  // // Flush the standard output to ensure the prompt is shown before reading input
-  io::stdout().flush().unwrap();
+mod rpc;
+mod request;
 
-  let mut name = String::new();
-  io::stdin().read_line(&mut name).expect("Failed to read line");
+use rpc::{password};
 
-  // Remove the newline character from the end of the input
-  name.trim().to_string()
+use request::request;
+
+pub fn clean_terminal() {
+  print!("{esc}c", esc = 27 as char);
 }
 
 #[tokio::main]
@@ -20,27 +18,23 @@ async fn main() -> io::Result<()> {
     // Connect to the server
     let mut stream = TcpStream::connect("127.0.0.1:8080").await?;
 
-    let password = ask_for_password();
-    let method = "password".to_string();
-    let params = vec![serde_json::json!(password)];
-
-    let request = Request::new(method, params, None);
-
-    // Write some data to the server
-    let request_json = serde_json::to_string(&request).unwrap();
-    stream.write_all(request_json.as_bytes()).await?;
-
-    // Read the response from the server
-    let mut buf = vec![0; 90000];
-    let n = stream.read(&mut buf).await?;
-    let response = serde_json::from_slice::<Response>(&buf[..n]).unwrap();
-
-    match response {
-      Response:: Success { result , .. } => {
-        print!("{}", result.as_str().unwrap());
+    // Ask for password to play game
+    let mut response: Response;
+    loop {
+      response = request(&mut stream, password).await?;
+      clean_terminal();
+      if response.is_success() {
+        break;
+      } else if response.is_error() {
+        println!("{}", response);
       }
-      _ => {},
     }
+
+    let result = response.result().expect("it is successful");
+    let color = result.0.as_object().unwrap().get(&"color".to_string()).unwrap().as_str().unwrap();
+    let board = result.0.as_object().unwrap().get(&"board".to_string()).unwrap().as_str().unwrap();
+    println!("Correct password, you are playing: {}", color);
+    print!("{}", board);
 
     Ok(())
 }

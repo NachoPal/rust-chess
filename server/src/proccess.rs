@@ -23,6 +23,8 @@ pub (super) fn proccess(mut socket: TcpStream, rpc: Arc<Rpc>) {
             let response = rpc.call_method(id, name, params);
             let response_json = serde_json::to_string::<Response>(&response).unwrap();
 
+            print!("Response json {:?}", response_json);
+
             // Write the data back to the socket
             if let Err(e) = socket.write_all(&response_json.as_bytes()).await {
                 println!("Failed to write to socket; err = {:?}", e);
