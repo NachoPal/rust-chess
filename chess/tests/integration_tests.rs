@@ -3,23 +3,11 @@ use chess_lib::board::{Board, Movement, Position, MovementError};
 use chess_lib::pieces::Bishop;
 use chess_lib::pieces::{Piece, Color::{self, Black, White}, Pawn, Rook, Queen, King, PieceFactory};
 use chess_lib::{assert_ok, assert_err};
-use std::collections::{HashSet, HashMap};
 
-fn create_board<'a>(
-  positions: &'a mut HashMap<Position, Box<dyn Piece>>,
-  pieces_set: &'a mut HashMap<Color, HashSet<Position>>,
-  pieces_dead: &'a mut HashMap<Color, Vec<Box<dyn Piece>>>
-) -> Board<'a> {
-
+fn create_board() -> Board {
   let dimension = Position { x: 7, y: 7 };
   let pieces: Option<Vec<(Position, Box<dyn Piece>)>> = None;
-  Board::new(dimension, pieces, positions, pieces_set, pieces_dead)
-}
-
-fn create_game<'a>(board: &'a mut Board<'a>) -> Game<'a> {
-  // let player_a = Player { name: "Nacho", color: White };
-  // let player_b = Player { name: "Pepe", color: Black };
-  Game::new(board)
+  Board::new(dimension, pieces)
 }
 
 fn add_pieces_and_move<T: Piece + 'static>(
@@ -110,7 +98,7 @@ fn horizontal_vertical_path_blocked<T: Piece + 'static, F, G>(
       assert_ok!(game.board.clean());
     }
   });
-  
+
   (1..=max_dimension_y).into_iter().for_each(|i| {
     let blocker = Some((Position { x: 0, y: i }, blocker_color));
     if i != max_dimension_y {
@@ -128,7 +116,7 @@ fn horizontal_vertical_path_blocked<T: Piece + 'static, F, G>(
     } else {
       assert_blocked_target(test_vertical_backward::<T>(game, max_dimension_y, blocker, false), game);
       assert_ok!(game.board.clean());
-    }  
+    }
   });
 }
 
@@ -241,7 +229,7 @@ fn diagonal_path_blocked<T: Piece + 'static, F, G>(
       assert_ok!(game.board.clean());
     }
   });
-  
+
   (1..=max_dimension).into_iter().for_each(|i| {
     let blocker_position = Some((Position { x: max_dimension - i, y: max_dimension - i }, blocker_color));
     if i != max_dimension {
@@ -301,12 +289,8 @@ fn diagonal_path_blocked_for_both_colors<T: Piece + 'static>(
 
 #[test]
 fn test_pawn_movements() {
-  let mut positions = HashMap::new();
-  let mut pieces_set = HashMap::new();
-  let mut pieces_dead = HashMap::new();
-
-  let mut board = create_board(&mut positions, &mut pieces_set, &mut pieces_dead);
-  let game = create_game(&mut board);
+  let board = create_board();
+  let mut game = Game::new(board);
 
   // Test White
   let initial_position_a = Position { x: 0, y: 1 };
@@ -330,12 +314,8 @@ fn test_pawn_movements() {
 
 #[test]
 fn rook_movements() {
-  let mut positions = HashMap::new();
-  let mut pieces_set = HashMap::new();
-  let mut pieces_dead = HashMap::new();
-
-  let mut board = create_board(&mut positions, &mut pieces_set, &mut pieces_dead);
-  let mut game = create_game(&mut board);
+  let board = create_board();
+  let mut game = Game::new(board);
   let max_dimension_x = game.board.dimension.x;
   let max_dimension_y = game.board.dimension.y;
   let min_dimension = 1;
@@ -345,7 +325,7 @@ fn rook_movements() {
     &mut game,
     max_dimension_x,
     max_dimension_y,
-    min_dimension, 
+    min_dimension,
     |res| { assert_ok!(res); }
   );
   // Invalid
@@ -353,19 +333,15 @@ fn rook_movements() {
     &mut game,
     max_dimension_x,
     max_dimension_y,
-    min_dimension, 
+    min_dimension,
     |res| { assert_err!(res, MovementError::IllegalMovement); }
   );
 }
 
 #[test]
 fn rook_movements_path_blocked() {
-  let mut positions = HashMap::new();
-  let mut pieces_set = HashMap::new();
-  let mut pieces_dead = HashMap::new();
-
-  let mut board = create_board(&mut positions, &mut pieces_set, &mut pieces_dead);
-  let mut game = create_game(&mut board);
+  let board = create_board();
+  let mut game = Game::new(board);
 
   let max_dimension_x = game.board.dimension.x;
   let max_dimension_y = game.board.dimension.y;
@@ -375,12 +351,8 @@ fn rook_movements_path_blocked() {
 
 #[test]
 fn bishop_movements() {
-  let mut positions = HashMap::new();
-  let mut pieces_set = HashMap::new();
-  let mut pieces_dead = HashMap::new();
-
-  let mut board = create_board(&mut positions, &mut pieces_set, &mut pieces_dead);
-  let mut game = create_game(&mut board);
+  let board = create_board();
+  let mut game = Game::new(board);
 
   let max_dimension_x = game.board.dimension.x;
   let max_dimension_y = game.board.dimension.y;
@@ -391,7 +363,7 @@ fn bishop_movements() {
     &mut game,
     max_dimension_x,
     max_dimension_y,
-    min_dimension, 
+    min_dimension,
     |res| { assert_ok!(res); }
   );
   // Invalid
@@ -406,12 +378,8 @@ fn bishop_movements() {
 
 #[test]
 fn bishop_movements_path_blocked() {
-  let mut positions = HashMap::new();
-  let mut pieces_set = HashMap::new();
-  let mut pieces_dead = HashMap::new();
-
-  let mut board = create_board(&mut positions, &mut pieces_set, &mut pieces_dead);
-  let mut game = create_game(&mut board);
+  let board = create_board();
+  let mut game = Game::new(board);
 
   let max_dimension_x = game.board.dimension.x;
   let max_dimension_y = game.board.dimension.y;
@@ -421,12 +389,8 @@ fn bishop_movements_path_blocked() {
 
 #[test]
 fn queen_movements() {
-  let mut positions = HashMap::new();
-  let mut pieces_set = HashMap::new();
-  let mut pieces_dead = HashMap::new();
-
-  let mut board = create_board(&mut positions, &mut pieces_set, &mut pieces_dead);
-  let mut game = create_game(&mut board);
+  let board = create_board();
+  let mut game = Game::new(board);
 
   let max_dimension_x = game.board.dimension.x;
   let max_dimension_y = game.board.dimension.y;
@@ -451,12 +415,8 @@ fn queen_movements() {
 
 #[test]
 fn queen_movements_path_blocked() {
-  let mut positions = HashMap::new();
-  let mut pieces_set = HashMap::new();
-  let mut pieces_dead = HashMap::new();
-
-  let mut board = create_board(&mut positions, &mut pieces_set, &mut pieces_dead);
-  let mut game = create_game(&mut board);
+  let board = create_board();
+  let mut game = Game::new(board);
 
   let max_dimension_x = game.board.dimension.x;
   let max_dimension_y = game.board.dimension.y;
@@ -467,12 +427,8 @@ fn queen_movements_path_blocked() {
 
 #[test]
 fn king_movements() {
-  let mut positions = HashMap::new();
-  let mut pieces_set = HashMap::new();
-  let mut pieces_dead = HashMap::new();
-
-  let mut board = create_board(&mut positions, &mut pieces_set, &mut pieces_dead);
-  let mut game = create_game(&mut board);
+  let board = create_board();
+  let mut game = Game::new(board);
 
   let mut max_dimension_x = 1;
   let mut max_dimension_y = 1;
@@ -516,12 +472,8 @@ fn king_movements() {
 
 #[test]
 fn king_movements_path_blocked() {
-  let mut positions = HashMap::new();
-  let mut pieces_set = HashMap::new();
-  let mut pieces_dead = HashMap::new();
-
-  let mut board = create_board(&mut positions, &mut pieces_set, &mut pieces_dead);
-  let mut game = create_game(&mut board);
+  let board = create_board();
+  let mut game = Game::new(board);
 
   let max_dimension_x = 1;
   let max_dimension_y = 1;
