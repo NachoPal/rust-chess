@@ -1,31 +1,23 @@
-use json_rpc::{JsonRpcError, Params, Response};
+use json_rpc::{JsonRpcError, Params, Response, Id, INVALID_PARAMS};
 use serde_json::{json, Value};
 use super::{Rpc, Context};
 use std::sync::Arc;
 
-fn password(id: u32, ctx: Arc<Context>, params: Params) -> Response {
+fn password(ctx: Arc<Context>, params: Params) -> Response {
   let expected_paswords = &ctx.passwords;
   match params.first() {
     Some(Value::String(pasword)) => {
       if let Some(color) = ctx.passwords.get(pasword) {
-        Response::Success {
-          jsonrpc: "2.0".to_string(),
-          result: json!(ctx.game.print_board()),
-        }
+        let result = json!(ctx.game.print_board());
+        Response::success(result, None)
       } else {
-        Response::Error {
-          jsonrpc: "2.0".to_string(),
-          error: JsonRpcError { code: -1, message: "Incorrect password".to_string(), data: None },
-          id
-        }
+        let error = JsonRpcError { code: 1, message: "Incorrect password".to_string(), data: None };
+        Response::error(error, None)
       }
     },
     _ => {
-      Response::Error {
-        jsonrpc: "2.0".to_string(),
-        error: JsonRpcError { code: -1, message: "Incorrect password".to_string(), data: None },
-        id
-      }
+      let error = JsonRpcError { code: INVALID_PARAMS, message: "Invalid Params".to_string(), data: None };
+      Response::error(error, None)
     }
   }
 

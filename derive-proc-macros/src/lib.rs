@@ -52,12 +52,12 @@ pub fn rpc(_attr: TokenStream, item: TokenStream) -> TokenStream {
         #input
 
         type Params = Vec<serde_json::Value>;
-        type MethodFunction #generics = fn(u32, Arc<#ident #generics>, Params) -> json_rpc::Response;
+        type MethodFunction #generics = fn(Arc<#ident #generics>, Params) -> json_rpc::Response;
 
         pub struct Rpc #generics {
           pub methods: HashMap<String, MethodFunction #generics>,
           pub ctx: Arc<#ident #generics>,
-          pub id: u32,
+          pub ids: HashMap<core::net::SocketAddr, json_rpc::Id>,
         }
 
         impl #generics Rpc #generics {
@@ -65,7 +65,7 @@ pub fn rpc(_attr: TokenStream, item: TokenStream) -> TokenStream {
             Self {
               methods: HashMap::new(),
               ctx,
-              id: 0,
+              ids: HashMap::new(),
             }
           }
 
@@ -73,11 +73,14 @@ pub fn rpc(_attr: TokenStream, item: TokenStream) -> TokenStream {
             self.methods.insert(name, method);
           }
 
-          pub fn call_method(&self, name: String, params: Params) -> json_rpc::Response {
+          pub fn call_method(&self, id: json_rpc::Id, name: String, params: Params) -> json_rpc::Response {
             if let Some(method) = self.methods.get(&name) {
-              return method(self.id, self.ctx.clone(), params)
+              let mut response = method(self.ctx.clone(), params);
+              response.set_id(id);
+              response
             } else {
-              json_rpc::Response::Error { jsonrpc: "2.0".to_string(), error: json_rpc::JsonRpcError { code: -1, message: "No method".to_string(), data: None }, id: 1 }
+              let error = json_rpc::JsonRpcError { code: json_rpc::METHOD_NOT_FOUND, message: "Method not found".to_string(), data: None };
+              json_rpc::Response::error(error, Some(id))
             }
           }
         }

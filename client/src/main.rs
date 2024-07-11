@@ -10,7 +10,7 @@ fn ask_for_password() -> String {
 
   let mut name = String::new();
   io::stdin().read_line(&mut name).expect("Failed to read line");
-  
+
   // Remove the newline character from the end of the input
   name.trim().to_string()
 }
@@ -21,13 +21,10 @@ async fn main() -> io::Result<()> {
     let mut stream = TcpStream::connect("127.0.0.1:8080").await?;
 
     let password = ask_for_password();
+    let method = "password".to_string();
+    let params = vec![serde_json::json!(password)];
 
-    let request = Request {
-      jsonrpc: "2.0".to_string(),
-      method: "password".to_string(),
-      params: vec![serde_json::json!(password)],
-      id: 0,
-    };
+    let request = Request::new(method, params, None);
 
     // Write some data to the server
     let request_json = serde_json::to_string(&request).unwrap();

@@ -34,11 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let dimension = Position { x: 7, y: 7 };
 
   let pieces: Option<Vec<(Position, Box<dyn Piece>)>> = None;
-  // let mut positions = HashMap::new();
-  // let mut pieces_set = HashMap::new();
-  // let mut pieces_dead = HashMap::new();
-  // let mut board = Board::new(dimension, pieces, &mut positions, &mut pieces_set, &mut pieces_dead);
-  let mut board = Board::new(dimension, pieces);
+  let board = Board::new(dimension, pieces);
   let mut game = Game::new(board);
 
   game.set_board();

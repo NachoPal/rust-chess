@@ -1,29 +1,42 @@
-use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 // pub use derive_proc_macros::rpc;
 
+pub const INVALID_PARAMS: i32 = -32602;
+pub const METHOD_NOT_FOUND: i32 = -32601;
+
 pub type Params = Vec<Value>;
+pub type Id = u32;
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Version(String);
+
+impl Default for Version {
+  fn default() -> Self {
+      Self("2.0".to_string())
+  }
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Request {
-  pub jsonrpc: String,
+  pub jsonrpc: Version,
   pub method: String,
   pub params: Params,
-  pub id: u32,
+  pub id: Id,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum Response {
   Success {
-    jsonrpc: String,
+    jsonrpc: Version,
     result: Value,
+    id: Id,
   },
   Error {
-    jsonrpc: String,
+    jsonrpc: Version,
     error: JsonRpcError,
-    id: u32,
+    id: Id,
   }
 }
 
@@ -34,30 +47,55 @@ pub struct JsonRpcError {
   pub data: Option<Value>
 }
 
-// type MethodFunction<Context> = fn(&Context, Params) -> Response;
+impl Request {
+  pub fn new(method: String, params: Params, id: Option<Id>) -> Self {
+    Request { jsonrpc: Version::default(), method, params, id: id.unwrap_or_default() }
+  }
 
-// pub struct Rpc<'a, Context> {
-//   pub methods: HashMap<String, MethodFunction<Context>>,
-//   pub ctx: &'a Context,
-// }
+  pub fn set_id(&mut self, new_id: Id) {
+    self.id = new_id;
+  }
+}
 
-// impl<'a, Context: Send + Sync> Rpc<'a, Context> {
-//   pub fn new(ctx: &'a Context) -> Self {
-//     Self {
-//       methods: HashMap::new(),
-//       ctx: ctx,
-//     }
-//   }
+impl Response {
+  pub fn is_success(&self) -> bool {
+      matches!(self, Response::Success { .. })
+  }
 
-//   pub fn register_method(&mut self, name: String, method: MethodFunction<Context>) {
-//     self.methods.insert(name, method);
-//   }
+  pub fn is_error(&self) -> bool {
+    matches!(self, Response::Error { .. })
+}
 
-//   pub fn call_method(&self, name: String, params: Params) -> Response {
-//     if let Some(method) = self.methods.get(&name) {
-//       return method(self.ctx, params)
-//     } else {
-//       Response::Error { jsonrpc: "2.0".to_string(), error: JsonRpcError { code: -1, message: "No method".to_string(), data: None }, id: 1 }
-//     }
-//   }
-// }
+  pub fn result(&self) -> Result<(&Value, Id), (&JsonRpcError, Id)> {
+    if let Response::Success { result, id, .. } = self {
+      Ok((result, *id))
+    } else if let Response::Error { error, id, .. } = self {
+      Err((error, *id))
+    } else {
+      unreachable!()
+    }
+  }
+
+  pub fn set_id(&mut self, new_id: Id) {
+    match self {
+      Response::Success { id, .. } => *id = new_id,
+      Response::Error { id, .. } => *id = new_id,
+    }
+  }
+
+  pub fn success(result: Value, id: Option<Id>) -> Response {
+    Response::Success {
+      jsonrpc: Version::default(),
+      result,
+      id: id.unwrap_or_default(),
+    }
+  }
+
+  pub fn error(error: JsonRpcError, id: Option<Id>) -> Response {
+    Response::Error {
+      jsonrpc: Version::default(),
+      error,
+      id: id.unwrap_or_default()
+    }
+  }
+}
