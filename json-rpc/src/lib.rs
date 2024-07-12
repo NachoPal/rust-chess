@@ -2,7 +2,6 @@ use std::fmt::{Display, Formatter};
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use colored::*;
-// pub use derive_proc_macros::rpc;
 
 pub const INVALID_PARAMS: i32 = -32602;
 pub const METHOD_NOT_FOUND: i32 = -32601;

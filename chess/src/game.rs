@@ -1,6 +1,4 @@
-use std::io::{self, Write};
 use serde::{Deserialize, Serialize};
-
 use crate::pieces::Knight;
 use super::ensure;
 
@@ -39,20 +37,20 @@ impl Game {
     }
   }
 
-  pub fn ask_movement(&self) -> Result<Movement, MovementError> {
-    print!("{:?}, your turn:", self.playing_color());
-    // Flush the standard output to ensure the prompt is shown before reading input
-    io::stdout().flush().unwrap();
+  // pub fn ask_movement(&self) -> Result<Movement, MovementError> {
+  //   print!("{:?}, your turn:", self.playing_color());
+  //   // Flush the standard output to ensure the prompt is shown before reading input
+  //   io::stdout().flush().unwrap();
 
-    let mut movement_string = String::new();
-    io::stdin().read_line(&mut movement_string).expect("Failed to read line");
+  //   let mut movement_string = String::new();
+  //   io::stdin().read_line(&mut movement_string).expect("Failed to read line");
 
-    // Remove the newline character from the end of the input
-    // movement_string.trim().to_string();
-    self.translate_movement(movement_string.trim().to_string())
-    // self.move_piece(movement)?;
-    // Ok(())
-  }
+  //   // Remove the newline character from the end of the input
+  //   // movement_string.trim().to_string();
+  //   self.translate_movement(movement_string.trim().to_string())
+  //   // self.move_piece(movement)?;
+  //   // Ok(())
+  // }
 
   fn translate_movement(&self, movement: String) -> Result<Movement, MovementError> {
     ensure!(movement.len() == 4, MovementError::WrongCommand(movement));
@@ -115,7 +113,7 @@ impl Game {
     let bishop_right = (Position { x: 5, y: row }, PieceFactory::create::<Bishop>(color));
 
     let mut pieces = vec![king, queen, rook_left, rook_right, knight_left, knight_right, bishop_left, bishop_right];
-    
+
     // Paws
     for x in 0..=self.board.dimension.x {
       let pawn = (Position { x, y: row + offset }, PieceFactory::create::<Pawn>(color));
@@ -140,14 +138,25 @@ impl Game {
     self.turn+=1;
   }
 
-  pub fn move_piece(&mut self, movement: Movement) -> Result<(), MovementError> {
+  // pub fn move_piece(&mut self, movement: Movement) -> Result<(), MovementError> {
+  //   let res = self.board.move_piece(self.playing_color(), &movement);
+  //   println!("{:?}", self.board.positions);
+  //   res
+  // }
+
+  pub fn move_piece(&mut self, movement_string: String) -> Result<(), MovementError> {
+    let movement = self.translate_movement(movement_string.trim().to_string())?;
     let res = self.board.move_piece(self.playing_color(), &movement);
-    println!("{:?}", self.board.positions);
+    // println!("{:?}", self.board.positions);
     res
   }
 
   fn playing_color(&self) -> Color {
     if self.turn%2 == 0 { White } else { Black }
+  }
+
+  pub fn static_playing_color(turn: u32) -> Color {
+    if turn%2 == 0 { White } else { Black }
   }
 
   pub fn print_board(&self) -> String {

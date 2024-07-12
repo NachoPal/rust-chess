@@ -1,13 +1,13 @@
-use std::io::{self, Write};
+use std::io;
 use tokio::net::TcpStream;
-use json_rpc::{Request, Response};
-use chess_lib::game::GameState;
+use json_rpc::Response;
+use chess_lib::game::Game;
 use chess_server::ChessResponse;
 
 mod rpc;
 mod request;
 
-use rpc::{password};
+use rpc::{movement, password};
 
 use request::request;
 
@@ -34,16 +34,26 @@ async fn main() -> io::Result<()> {
 
     let result = response.result().expect("it is successful");
     let chess_response = serde_json::from_value::<ChessResponse>(result.0.clone()).unwrap();
-    println!("Correct password, you are playing: {:?}", chess_response.color);
+    let player_color = chess_response.color;
+    let mut turn = chess_response.turn;
+    println!("Correct password, you are playing: {:?}\n", player_color);
     // print!("{}", board);
     print!("{}", chess_response.board);
 
     // Ask for movement
-    // loop {
-
-    // }
-
-
+    loop {
+      if Game::static_playing_color(turn) == player_color {
+        response = request(&mut stream, movement).await?;
+        clean_terminal();
+        if response.is_success() {
+          break;
+        } else if response.is_error() {
+          println!("{}", response);
+        }
+      } else {
+        print!("It is {:?} turn. Wait for his move", !player_color);
+      }
+    }
 
     Ok(())
 }

@@ -4,7 +4,6 @@ use std::collections::{HashMap, HashSet};
 use serde::{Serialize, Deserialize};
 use super::pieces::{
   Piece, Color::{self, White, Black},
-  King, Queen, Pawn, Rook, Bishop, Knight
 };
 use super::ensure;
 use self::MovementKind::{Diagonal, Horizontal, Vertical, Knight as KnightMovement};

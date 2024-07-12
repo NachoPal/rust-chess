@@ -1,9 +1,8 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use proc_macro2::Span;
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, LifetimeParam, ItemStruct, Lifetime};
+use syn::{parse_macro_input, DeriveInput, ItemStruct};
 
 #[proc_macro_derive(Piece)]
 pub fn new_derive(input: TokenStream) -> TokenStream {
@@ -22,11 +21,6 @@ pub fn new_derive(input: TokenStream) -> TokenStream {
           fn color(&self) -> Color {
             self.0
           }
-          // fn valid_moves(&self) -> Vec<MovementKind> {
-          //   vec![
-          //     Vertical(Forward(8)),
-          //   ]
-          // }
         }
     };
 
@@ -38,15 +32,8 @@ pub fn new_derive(input: TokenStream) -> TokenStream {
 pub fn rpc(_attr: TokenStream, item: TokenStream) -> TokenStream {
     // Parse the input tokens into a syntax tree
     let input = parse_macro_input!(item as ItemStruct);
-    let input_ext = input.clone();
-
     let ident = &input.ident;
     let generics = &input.generics;
-    // let generics_ext = &mut input_ext.clone().generics;
-    // let generics_params_ext = &mut generics_ext.params;
-    // let rpc_lifetime = Lifetime::new("'rpc", Span::call_site());
-    // generics_params_ext.push(syn::GenericParam::Lifetime(LifetimeParam::new(rpc_lifetime)));
-
     // Generate the new function body
     let gen = quote! {
         #input

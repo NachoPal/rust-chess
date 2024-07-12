@@ -1,8 +1,7 @@
-use std::result;
 use std::sync::Arc;
 use tokio::net::TcpStream;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use json_rpc::{Request, Response, Id};
+use json_rpc::{Request, Response};
 use chess_lib::game::GameState;
 use super::Rpc;
 

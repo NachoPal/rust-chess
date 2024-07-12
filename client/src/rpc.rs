@@ -1,5 +1,5 @@
 use std::io::{self, Write};
-use json_rpc::{Request, Response};
+use json_rpc::Request;
 
 fn ask_user(msg: String) -> String {
   print!("{}: ", msg);
@@ -22,7 +22,7 @@ pub fn password() -> Request {
 }
 
 pub fn movement() -> Request {
-  let movement = ask_user("Your movement".to_string());
+  let movement = ask_user("\nIt is your turn. Make your move".to_string());
   let method = "movement".to_string();
   let params = vec![serde_json::json!(movement)];
 

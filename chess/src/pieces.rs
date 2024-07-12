@@ -2,11 +2,23 @@ use std::any::Any;
 use std::fmt::Debug;
 use derive_proc_macros::Piece;
 use serde::{Deserialize, Serialize};
+use std::ops::Not;
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum Color {
 	Black,
 	White,
+}
+
+impl Not for Color {
+  type Output = Color;
+
+  fn not(self) -> Color {
+      match self {
+          Color::Black => Color::White,
+          Color::White => Color::Black,
+      }
+  }
 }
 
 pub trait Piece: Debug + AnyPiece + Send + Sync {

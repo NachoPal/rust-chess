@@ -1,4 +1,4 @@
-use chess_lib::game::{Game, Player};
+use chess_lib::game::Game;
 use chess_lib::board::{Board, Movement, Position, MovementError};
 use chess_lib::pieces::Bishop;
 use chess_lib::pieces::{Piece, Color::{self, Black, White}, Pawn, Rook, Queen, King, PieceFactory};
