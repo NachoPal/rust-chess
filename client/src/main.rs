@@ -1,6 +1,8 @@
 use std::io::{self, Write};
 use tokio::net::TcpStream;
 use json_rpc::{Request, Response};
+use chess_lib::game::GameState;
+use chess_server::ChessResponse;
 
 mod rpc;
 mod request;
@@ -31,10 +33,17 @@ async fn main() -> io::Result<()> {
     }
 
     let result = response.result().expect("it is successful");
-    let color = result.0.as_object().unwrap().get(&"color".to_string()).unwrap().as_str().unwrap();
-    let board = result.0.as_object().unwrap().get(&"board".to_string()).unwrap().as_str().unwrap();
-    println!("Correct password, you are playing: {}", color);
-    print!("{}", board);
+    let chess_response = serde_json::from_value::<ChessResponse>(result.0.clone()).unwrap();
+    println!("Correct password, you are playing: {:?}", chess_response.color);
+    // print!("{}", board);
+    print!("{}", chess_response.board);
+
+    // Ask for movement
+    // loop {
+
+    // }
+
+
 
     Ok(())
 }

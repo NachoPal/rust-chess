@@ -1,4 +1,6 @@
 use std::io::{self, Write};
+use serde::{Deserialize, Serialize};
+
 use crate::pieces::Knight;
 use super::ensure;
 
@@ -13,7 +15,7 @@ pub struct Player<'a> {
 	pub color: Color,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
 pub enum GameState {
 	Ready,
 	OnGoing,
@@ -21,10 +23,10 @@ pub enum GameState {
 	Ended,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Game {
 	pub board: Board,
 	pub state: GameState,
-	// pub players: (Player<'a>, Player<'a>),
 	pub turn: u32,
 }
 

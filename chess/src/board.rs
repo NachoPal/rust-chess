@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt;
 use std::collections::{HashMap, HashSet};
+use serde::{Serialize, Deserialize};
 use super::pieces::{
   Piece, Color::{self, White, Black},
   King, Queen, Pawn, Rook, Bishop, Knight
@@ -36,7 +37,7 @@ impl fmt::Display for MovementError {
 
 impl Error for MovementError {}
 
-#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
+#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Position {
 	pub x: i32,
 	pub y: i32,
@@ -65,11 +66,13 @@ pub enum MovementKind {
 	Knight,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Board {
   pub dimension: Position,
+  #[serde(skip)]
 	pub positions: HashMap<Position, Box<dyn Piece>>,
 	pub pieces_set: HashMap<Color, HashSet<Position>>,
+  #[serde(skip)]
 	pub pieces_dead: HashMap<Color, Vec<Box<dyn Piece>>>
 }
 

@@ -1,9 +1,9 @@
 use std::io::{self, Write};
 use json_rpc::{Request, Response};
 
-fn ask_for_password() -> String {
-  print!("Enter the game password: ");
-  // // Flush the standard output to ensure the prompt is shown before reading input
+fn ask_user(msg: String) -> String {
+  print!("{}: ", msg);
+  // Flush the standard output to ensure the prompt is shown before reading input
   io::stdout().flush().unwrap();
 
   let mut name = String::new();
@@ -14,9 +14,17 @@ fn ask_for_password() -> String {
 }
 
 pub fn password() -> Request {
-  let password = ask_for_password();
+  let password = ask_user("Enter game password".to_string());
   let method = "password".to_string();
   let params = vec![serde_json::json!(password)];
+
+  Request::new(method, params, None)
+}
+
+pub fn movement() -> Request {
+  let movement = ask_user("Your movement".to_string());
+  let method = "movement".to_string();
+  let params = vec![serde_json::json!(movement)];
 
   Request::new(method, params, None)
 }
