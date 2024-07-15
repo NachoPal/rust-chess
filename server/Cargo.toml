@@ -13,3 +13,6 @@ chess-lib = { path = "../chess" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 json-rpc = { path = "../json-rpc" }
+
+[[bin]]
+name = "chess-server"

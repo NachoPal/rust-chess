@@ -5,10 +5,12 @@ use json_rpc::{Request, Response};
 use chess_lib::game::GameState;
 use super::Rpc;
 
-pub (super) fn proccess(mut socket: TcpStream, rpc: Arc<Rpc>) {
+pub (super) fn proccess(mut socket: TcpStream, rpc: Arc<Rpc<'static>>) {
   // Spawn a new task to handle the connection
   let handle = tokio::spawn(async move {
     let mut buf = [0; 90000];
+
+
 
     while rpc.ctx.game.state != GameState::Ended {
       // Read data from the socket
@@ -21,7 +23,10 @@ pub (super) fn proccess(mut socket: TcpStream, rpc: Arc<Rpc>) {
           let name = request_json.method;
           let params = request_json.params;
 
-          let response = rpc.call_method(id, name, params);
+          // Proceed or wait in case is not color's turn
+
+
+          let response = rpc.call_method(id, name, params).await;
           let response_json = serde_json::to_string::<Response>(&response).unwrap();
 
           print!("Response json {:?}", response_json);
@@ -31,6 +36,8 @@ pub (super) fn proccess(mut socket: TcpStream, rpc: Arc<Rpc>) {
               println!("Failed to write to socket; err = {:?}", e);
               // return;
           }
+
+          // Notify to the rest of waiting task the new color turn
 
         }
         Err(e) => {

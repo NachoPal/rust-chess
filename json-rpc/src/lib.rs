@@ -65,7 +65,7 @@ impl Response {
 
   pub fn is_error(&self) -> bool {
     matches!(self, Response::Error { .. })
-}
+  }
 
   pub fn result(&self) -> Result<(&Value, Id), (&JsonRpcError, Id)> {
     if let Response::Success { result, id, .. } = self {
