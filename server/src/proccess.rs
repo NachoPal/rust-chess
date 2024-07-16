@@ -9,10 +9,10 @@ pub (super) fn proccess(mut socket: TcpStream, rpc: Arc<Rpc<'static>>) {
   // Spawn a new task to handle the connection
   let handle = tokio::spawn(async move {
     let mut buf = [0; 90000];
+    // let mut ctx = rpc.ctx.lock().unwrap();
 
-
-
-    while rpc.ctx.game.state != GameState::Ended {
+    // while rpc.ctx.game.state != GameState::Ended {
+    loop {
       // Read data from the socket
       match socket.read(&mut buf).await {
         // Ok(n) if n == 0 => return, // Connection closed

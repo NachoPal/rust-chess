@@ -45,7 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     game: game,
   };
 
-  let rpc = rpc(Arc::new(ctx));
+  let rpc = rpc(ctx);
 
   let listener = tcp_listener().await?;
 
