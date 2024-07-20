@@ -39,11 +39,18 @@ pub struct Rpc<'a, Context> {
   pub ctx: &'a Context,
 }
 
+pub trait RpcHandler {
+  type Context: Send + Sync;
+  fn new(ctx: &Self::Context) -> Self;
+  fn register_method(&mut self, name: String, method: MethodFunction<Self::Context>);
+  fn call_method(&self, name: String, params: Params) -> Response;
+}
+
 impl<'a, Context: Send + Sync> Rpc<'a, Context> {
   pub fn new(ctx: &'a Context) -> Self {
     Self {
       methods: HashMap::new(),
-      ctx: ctx,
+      ctx,
     }
   }
 
@@ -59,3 +66,30 @@ impl<'a, Context: Send + Sync> Rpc<'a, Context> {
     }
   }
 }
+
+// struct ChessContext {
+//   a: u32,
+//   b: u32,
+// }
+
+// impl<'a, Context: Send + Sync> RpcHandler for Rpc<'a, Context> {
+//   type Context = ChessContext;
+//   fn new(ctx: &Self::Context) -> Self {
+//     Self {
+//       methods: HashMap::new(),
+//       ctx,
+//     }
+//   }
+
+//   fn register_method(&mut self, name: String, method: MethodFunction<Context>) {
+//     self.methods.insert(name, method);
+//   }
+
+//   fn call_method(&self, name: String, params: Params) -> Response {
+//     if let Some(method) = self.methods.get(&name) {
+//       return method(self.ctx, params)
+//     } else {
+//       Response::Error { jsonrpc: "2.0".to_string(), error: JsonRpcError { code: -1, message: "No method".to_string(), data: None }, id: 1 }
+//     }
+//   }
+// }

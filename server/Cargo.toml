@@ -6,10 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-derive_proc_macros = { path = "../derive-proc-macros" }
+# derive_proc_macros = { path = "../derive-proc-macros" }
 colored = "2.0"
 tokio = { version = "1", features = ["full"] }
 chess-lib = { path = "../chess" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 json-rpc = { path = "../json-rpc" }
+json-rpc-proc-macros = { path = "../json-rpc/proc-macros" }

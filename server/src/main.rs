@@ -11,7 +11,7 @@ use listener::tcp_listener;
 mod proccess;
 use proccess::proccess;
 mod rpc;
-use rpc::rpc;
+use rpc::{ChessContext, rpc};
 
 // Lib
 use chess_lib::game::{Game, GameState, Player};
@@ -20,11 +20,6 @@ use chess_lib::pieces::{Piece, Color::{self, Black, White}};
 
 pub fn clean_terminal() {
   print!("{esc}c", esc = 27 as char);
-}
-
-struct Context<'a> {
-  pub passwords: &'a HashMap<String, Color>,
-  pub game: &'a Game<'a>,
 }
 
 #[tokio::main]
@@ -46,19 +41,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   passwords.insert("white".to_string(), Color::White);
   passwords.insert("black".to_string(), Color::Black);
 
-  let ctx = Context {
+  let ctx = ChessContext {
     passwords: &passwords,
     game: &game,
   };
 
-  let rpc: Arc<Rpc<Context>> = Arc::new(rpc(&ctx));
+  let rpc: Arc<Rpc<ChessContext>> = Arc::new(rpc(&ctx));
 
   let listener = tcp_listener().await?;
 
   loop {
     // Accept a new socket
     let (socket, _addr) = listener.accept().await?;
-    proccess::<Context>(socket, rpc.clone());
+    proccess::<ChessContext>(socket, rpc.clone());
   }
 
   while game.is_ongoing() {

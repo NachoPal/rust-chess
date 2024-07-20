@@ -13,7 +13,7 @@ pub struct Player<'a> {
 	pub color: Color,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum GameState {
 	Ready,
 	OnGoing,
@@ -21,6 +21,7 @@ pub enum GameState {
 	Ended,
 }
 
+#[derive(Debug)]
 pub struct Game<'a> {
 	pub board: &'a mut Board<'a>,
 	pub state: GameState,
