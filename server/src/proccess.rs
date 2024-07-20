@@ -2,7 +2,7 @@ use std::sync::Arc;
 use tokio::net::TcpStream;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use json_rpc::{Request, Response};
-use chess_lib::game::GameState;
+// use chess_lib::game::GameState;
 use super::Rpc;
 
 pub (super) fn proccess(mut socket: TcpStream, rpc: Arc<Rpc<'static>>) {

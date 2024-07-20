@@ -4,7 +4,7 @@ use super::{Rpc, Context};
 use std::sync::{Arc, Mutex};
 use chess_server::ChessResponse;
 use chess_lib::pieces::Color;
-use derive_proc_macros::rpc_method;
+use json_rpc_proc_macros::rpc_method;
 
 #[rpc_method]
 pub async fn password(ctx: Arc<Mutex<Context>>, params: Params) -> Response {

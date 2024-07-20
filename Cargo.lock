@@ -78,10 +78,18 @@ dependencies = [
 name = "chess-lib"
 version = "0.1.0"
 dependencies = [
+ "chess-proc-macros",
  "colored",
- "derive_proc_macros",
  "serde",
  "tokio",
+]
+
+[[package]]
+name = "chess-proc-macros"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -90,8 +98,8 @@ version = "0.1.0"
 dependencies = [
  "chess-lib",
  "colored",
- "derive_proc_macros",
  "json-rpc",
+ "json-rpc-proc-macros",
  "serde",
  "serde_json",
  "tokio",
@@ -105,17 +113,6 @@ checksum = "cbf2150cce219b664a8a70df7a1f933836724b503f8a413af9365b4dcc4d90b8"
 dependencies = [
  "lazy_static",
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "derive_proc_macros"
-version = "0.1.0"
-dependencies = [
- "json-rpc",
- "proc-macro2",
- "quote",
- "serde_json",
- "syn",
 ]
 
 [[package]]
@@ -143,6 +140,15 @@ dependencies = [
  "colored",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "json-rpc-proc-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

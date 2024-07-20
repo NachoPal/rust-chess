@@ -1,6 +1,5 @@
 use std::collections::HashMap;
-use std::sync::Arc;
-use derive_proc_macros::rpc;
+use json_rpc_proc_macros::rpc;
 
 mod listener;
 use listener::tcp_listener;

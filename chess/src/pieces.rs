@@ -1,6 +1,6 @@
 use std::any::Any;
 use std::fmt::Debug;
-use derive_proc_macros::Piece;
+use chess_proc_macros::Piece;
 use serde::{Deserialize, Serialize};
 use std::ops::Not;
 
