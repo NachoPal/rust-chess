@@ -15,11 +15,11 @@ pub fn rpc(_attr: proc_macro::TokenStream, item: proc_macro::TokenStream) -> pro
 
         type Params = Vec<serde_json::Value>;
         type BoxFuture<'rpc, T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'rpc>>;
-        type MethodFunction #generics_ext = fn(std::sync::Arc<std::sync::Mutex<#ident #generics>>, Params) -> BoxFuture<'rpc, json_rpc::Response>;
+        type MethodFunction #generics_ext = fn(std::sync::Arc<tokio::sync::Mutex<#ident #generics>>, Params) -> BoxFuture<'rpc, json_rpc::Response>;
 
         pub struct Rpc #generics_ext {
           pub methods: HashMap<String, MethodFunction #generics_ext>,
-          pub ctx: std::sync::Arc<std::sync::Mutex<#ident #generics>>,
+          pub ctx: std::sync::Arc<tokio::sync::Mutex<#ident #generics>>,
           pub ids: HashMap<core::net::SocketAddr, json_rpc::Id>,
         }
 
@@ -35,7 +35,7 @@ pub fn rpc(_attr: proc_macro::TokenStream, item: proc_macro::TokenStream) -> pro
           pub fn new(ctx: #ident #generics) -> Self {
             Self {
               methods: HashMap::new(),
-              ctx: std::sync::Arc::new(std::sync::Mutex::new(ctx)),
+              ctx: std::sync::Arc::new(tokio::sync::Mutex::new(ctx)),
               ids: HashMap::new(),
             }
           }

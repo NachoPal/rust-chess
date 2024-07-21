@@ -13,7 +13,7 @@ pub struct Player<'a> {
 	pub color: Color,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone, Copy)]
 pub enum GameState {
 	Ready,
 	OnGoing,
@@ -148,6 +148,7 @@ impl Game {
     let movement = self.translate_movement(movement_string.trim().to_string())?;
     let res = self.board.move_piece(self.playing_color(), &movement);
     // println!("{:?}", self.board.positions);
+    if res.is_ok() { self.new_turn() }
     res
   }
 

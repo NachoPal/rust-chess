@@ -1,21 +1,23 @@
 use json_rpc::{JsonRpcError, Params, Response, INVALID_PARAMS};
 use serde_json::Value;
 use super::{Rpc, Context};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::{sync::{broadcast::Receiver, Mutex}, time::{sleep, Duration}};
 use chess_server::ChessResponse;
-use chess_lib::pieces::Color;
+use chess_lib::{pieces::Color, game::Game};
 use json_rpc_proc_macros::rpc_method;
 
 #[rpc_method]
 pub async fn password(ctx: Arc<Mutex<Context>>, params: Params) -> Response {
-  let ctx = ctx.lock().unwrap();
+  let ctx = ctx.lock().await;
   match params.first() {
     Some(Value::String(pasword)) => {
       if let Some(color) = ctx.passwords.get(pasword) {
         let chess_response = ChessResponse {
-          color: *color,
+          player_color: Some(*color),
           turn: ctx.game.turn,
           board: ctx.game.print_board(),
+          game_state: ctx.game.state,
         };
         Response::success(serde_json::to_value::<ChessResponse>(chess_response).unwrap(), None)
       } else {
@@ -32,15 +34,20 @@ pub async fn password(ctx: Arc<Mutex<Context>>, params: Params) -> Response {
 
 #[rpc_method]
 pub async fn movement(ctx: Arc<Mutex<Context>>, params: Params) -> Response {
-  let mut ctx = ctx.lock().unwrap();
+  let mut ctx = ctx.lock().await;
   match params.first() {
     Some(Value::String(movement)) => {
       ctx.game.move_piece(movement.trim().to_string()).map(|_| {
       let chess_response = ChessResponse {
-        color: Color::White, /* TODO: Probably need to remove it */
+        player_color: None,
         turn: ctx.game.turn,
         board: ctx.game.print_board(),
+        game_state: ctx.game.state,
       };
+
+      let playing_color = Game::static_playing_color(ctx.game.turn);
+      ctx.playing_color_tx.send(playing_color).unwrap();
+
       Response::success(serde_json::to_value::<ChessResponse>(chess_response).unwrap(), None)
       }).unwrap_or_else(|err| {
         let error = JsonRpcError { code: INVALID_PARAMS, message: format!("{}", err), data: None };
@@ -54,9 +61,47 @@ pub async fn movement(ctx: Arc<Mutex<Context>>, params: Params) -> Response {
   }
 }
 
+
+#[rpc_method]
+pub async fn notify_turn(ctx: Arc<Mutex<Context>>, params: Params) -> Response {
+  let mut rx: Receiver<Color>;
+
+  if let Some(playing_color_value) = params.first() {
+    // Mutex in its own scope to drop it after subscribing to the channel;
+    // We want to avoid blocking the Mutex for other rpc calls
+    // (`movement` method should be able to lock the Mutex and write into the channel)
+    {   
+      let ctx = ctx.lock().await;
+      rx = ctx.playing_color_tx.subscribe();
+    }
+
+    let playing_color = serde_json::from_value::<Color>(playing_color_value.clone()).unwrap(); // TODO map_err and send Response::error
+    
+    // Waiting for `movement` to write into the channel to continue
+    while rx.recv().await.unwrap() != playing_color {
+      sleep(Duration::from_secs(1)).await;
+    }
+
+    // Only when recived the expected turn color, we procced to lock the Mutex again
+    let ctx = ctx.lock().await;
+
+    let chess_response = ChessResponse {
+      player_color: None,
+      turn: ctx.game.turn,
+      board: ctx.game.print_board(),
+      game_state: ctx.game.state,
+    };
+    Response::success(serde_json::to_value::<ChessResponse>(chess_response).unwrap(), None)
+  } else {
+    let error = JsonRpcError { code: INVALID_PARAMS, message: "Invalid Params".to_string(), data: None };
+    Response::error(error, None)
+  }
+}
+
 pub(super) fn rpc(ctx: Context) -> Arc<Rpc<'static>> {
   let mut rpc = Rpc::new(ctx);
   rpc.register_method("password".to_string(), password);
   rpc.register_method("movement".to_string(), movement);
+  rpc.register_method("notify_turn".to_string(), notify_turn);
   Arc::new(rpc)
 }

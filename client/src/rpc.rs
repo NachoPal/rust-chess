@@ -1,5 +1,6 @@
 use std::io::{self, Write};
 use json_rpc::Request;
+use chess_lib::pieces::Color;
 
 fn ask_user(msg: String) -> String {
   print!("{}: ", msg);
@@ -27,4 +28,11 @@ pub fn movement() -> Request {
   let params = vec![serde_json::json!(movement)];
 
   Request::new(method, params, None)
+}
+
+pub fn notify_turn(color: Color) -> Request {
+  println!("\nIt is {:?} turn. Wait for his move", !color);
+  let method = "notify_turn".to_string();
+  Request::new(method, vec![serde_json::json!(color)], None)
+  
 }

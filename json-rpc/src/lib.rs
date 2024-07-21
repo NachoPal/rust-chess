@@ -109,7 +109,7 @@ impl Display for Response {
       },
       Err((err, _)) => {
         let error_msg = format!("Error");
-        write!(f, "{}: {}", error_msg.red(), err.message)
+        write!(f, "{}: {}\n", error_msg.red(), err.message)
       }
     }
   }
