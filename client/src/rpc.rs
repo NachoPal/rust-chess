@@ -31,7 +31,7 @@ pub fn movement() -> Request {
 }
 
 pub fn notify_turn(color: Color) -> Request {
-  println!("\nIt is {:?} turn. Wait for his move", !color);
+  println!("\nIt is {:?} turn. Wait for his move...", !color);
   let method = "notify_turn".to_string();
   Request::new(method, vec![serde_json::json!(color)], None)
   

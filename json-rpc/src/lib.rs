@@ -5,6 +5,7 @@ use colored::*;
 
 pub const INVALID_PARAMS: i32 = -32602;
 pub const METHOD_NOT_FOUND: i32 = -32601;
+pub const FAILED_AUTH: i32 = -32000;
 
 pub type Params = Vec<Value>;
 pub type Id = u32;

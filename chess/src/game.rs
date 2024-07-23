@@ -160,7 +160,7 @@ impl Game {
     if turn%2 == 0 { White } else { Black }
   }
 
-  pub fn print_board(&self) -> String {
+  pub fn print_board(&self, color: Color) -> String {
     use colored::*;
     let mut result : Vec<String> = Vec::new();
     let x_max = self.board.dimension.x;
@@ -179,10 +179,10 @@ impl Game {
       board.push(row);
     }
 
-    if self.playing_color() == White { 
+    if color == White { 
       board.reverse();
     }
-    if self.playing_color() == Black {
+    if color== Black {
       left_numbers.reverse();
       bottom_letters.reverse();
       for y in 0..=y_max {

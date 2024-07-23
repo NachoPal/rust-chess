@@ -6,7 +6,7 @@ use listener::tcp_listener;
 mod proccess;
 use proccess::proccess;
 mod rpc;
-use rpc::rpc;
+use rpc::{Context, rpc};
 use tokio::sync::broadcast::{self, Sender};
 
 // Lib
@@ -18,13 +18,6 @@ const MAX_CHANNEL:  usize = 16;
 
 pub fn clean_terminal() {
   print!("{esc}c", esc = 27 as char);
-}
-
-#[rpc]
-struct Context {
-  pub passwords: HashMap<String, Color>,
-  pub game: Game,
-  pub playing_color_tx: Sender<Color>, 
 }
 
 #[tokio::main]
@@ -43,10 +36,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   passwords.insert("white".to_string(), Color::White);
   passwords.insert("black".to_string(), Color::Black);
 
+  let auth = HashMap::new();
+
   let (playing_color_tx, _) = broadcast::channel(MAX_CHANNEL);
 
   let ctx = Context {
     passwords,
+    auth,
     game,
     playing_color_tx,
   };
@@ -61,8 +57,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Accept a new socket
     let (socket, addr) = listener.accept().await?;
     println!("- Established connection with {:?}", addr);
-    proccess(socket, rpc.clone());
+    proccess(socket, addr, rpc.clone());
   }
 
   Ok(())
+
+  // TODO: add addr to RPC and check in auth if the addr is register as a valid addr
+  // after password method registration
+  // register_method should have a thrid parameter (bool) to tell `call_method` if it should
+  // check for auth or not (all of methods will need but `password`)
 }

@@ -1,11 +1,12 @@
 use std::sync::Arc;
 use tokio::net::TcpStream;
+use core::net::SocketAddr;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use json_rpc::{Request, Response};
 // use chess_lib::game::GameState;
-use super::Rpc;
+use super::rpc::Rpc;
 
-pub (super) fn proccess(mut socket: TcpStream, rpc: Arc<Rpc<'static>>) {
+pub (super) fn proccess(mut socket: TcpStream, addr: SocketAddr, rpc: Arc<Rpc<'static>>) {
   // Spawn a new task to handle the connection
   let handle = tokio::spawn(async move {
     let mut buf = [0; 90000];
@@ -24,7 +25,7 @@ pub (super) fn proccess(mut socket: TcpStream, rpc: Arc<Rpc<'static>>) {
           let params = request_json.params;
 
           // Proceed or wait in case is not color's turn
-          let response = rpc.call_method(id, name, params).await;
+          let response = rpc.call_method(addr, id, name, params).await;
           let response_json = serde_json::to_string::<Response>(&response).unwrap();
 
           // Write the data back to the socket
