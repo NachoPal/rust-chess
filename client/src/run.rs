@@ -1,7 +1,7 @@
 //! Run module.
-//! 
+//!
 //! Collection of Rpc `Request` to be submitted to the server
-//! 
+//!
 use chess_lib::game::{Game, GameState};
 use chess_server::ChessResponse;
 use json_rpc::{Response, CONNECTION_CLOSED_BY_SERVER};
@@ -17,11 +17,11 @@ fn clean_terminal() {
     print!("{esc}c\n", esc = 27 as char);
 }
 
-/// Ask for password to connect to server, running a loop afterwards in case of success 
+/// Ask for password to connect to server, running a loop afterwards in case of success
 /// asking for movements chess movements
-/// 
+///
 /// It will either wait for its color turn or wait for a movement input
-/// 
+///
 /// It keeps printing an updated board returned by the server
 pub async fn run(
     reader: Arc<Mutex<ReadHalf<TcpStream>>>,

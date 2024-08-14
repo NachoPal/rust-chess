@@ -1,8 +1,7 @@
 //! Game module.
-//! 
+//!
 //! It provides the methods to create and interact with a Chess game
-//! 
-use serde::{Deserialize, Serialize};
+//!
 use super::{
     board::{Board, Movement, MovementError, Position},
     ensure,
@@ -12,6 +11,7 @@ use super::{
         King, Knight, Pawn, Piece, PieceFactory, Queen, Rook,
     },
 };
+use serde::{Deserialize, Serialize};
 
 /// Player representation
 pub struct Player<'a> {

@@ -34,7 +34,7 @@ async fn main() -> io::Result<()> {
             let _ = shutdown_tx_clone.send("Received Ctrl+C, shutting down.");
         }
     });
-    
+
     tokio::select! {
         _ = run(reader_mutex.clone(), &mut writer, shutdown_tx.clone()) => {},
         message = shutdown_rx.recv() => {

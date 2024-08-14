@@ -6,9 +6,12 @@
 use chess_lib::board::{Board, Position};
 use chess_lib::game::Game;
 use chess_lib::pieces::{Color, Piece};
-use std::{collections::HashMap, io, sync::Arc};
-use tokio::{sync::{broadcast, Mutex}, net::TcpListener};
 use clap::Parser;
+use std::{collections::HashMap, io, sync::Arc};
+use tokio::{
+    net::TcpListener,
+    sync::{broadcast, Mutex},
+};
 
 mod rpc;
 mod run;

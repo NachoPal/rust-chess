@@ -16,9 +16,7 @@ impl syn::parse::Parse for RpcArgs {
                     ("auth", syn::Lit::Str(lit_str)) => {
                         auth_fn = Some(syn::Ident::new(&lit_str.value(), lit_str.span()));
                     }
-                    _ => return Err(
-                        syn::Error::new_spanned(ident, "Unsupported attribute")
-                    ),
+                    _ => return Err(syn::Error::new_spanned(ident, "Unsupported attribute")),
                 }
             } else {
                 return Err(lookahead.error());
@@ -61,7 +59,7 @@ pub fn rpc(
 
         type Params = Vec<serde_json::Value>;
         type BoxFuture<'rpc, T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'rpc>>;
-        type MethodFunction #generics_ext 
+        type MethodFunction #generics_ext
             = fn(
                 core::net::SocketAddr,
                 std::sync::Arc<tokio::sync::Mutex<#ident #generics>>,
@@ -96,7 +94,7 @@ pub fn rpc(
             ) -> json_rpc::Response {
                 if let Some((method, auth)) = self.methods.get(&name) {
                     if *auth && !self.auth(addr).await {
-                        let error = json_rpc::JsonRpcError { 
+                        let error = json_rpc::JsonRpcError {
                             code: json_rpc::FAILED_AUTH,
                             message: "Failed authentication".to_string(),
                             data: None

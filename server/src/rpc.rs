@@ -1,7 +1,7 @@
 //! RPC module.
-//! 
+//!
 //! Collection of Rpc `Response` to be returned by the server
-//! 
+//!
 use chess_lib::{game::Game, pieces::Color};
 use chess_server::ChessResponse;
 use core::net::SocketAddr;
@@ -36,7 +36,7 @@ pub struct Context {
 
 /// Register a `SocketAddr` as a whitelisted address to submit requests on behalf
 /// a certain playing `Color`
-/// 
+///
 /// It will be called before each rpc method that requires authentication
 #[allow(unused)]
 async fn password_authentication(rpc: &Rpc<'_>, addr: SocketAddr) -> bool {

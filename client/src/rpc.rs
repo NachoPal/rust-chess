@@ -1,7 +1,7 @@
 //! RPC module.
-//! 
+//!
 //! Collection of Rpc `Request` to be submitted to the server
-//! 
+//!
 use json_rpc::Request;
 use std::io::{self, Write};
 

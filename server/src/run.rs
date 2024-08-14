@@ -1,7 +1,7 @@
 //! Run module.
-//! 
+//!
 //! Collection of Rpc `Request` to be submitted to the server
-//! 
+//!
 use core::net::SocketAddr;
 use std::{io, sync::Arc};
 use tokio::{

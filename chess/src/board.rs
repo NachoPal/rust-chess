@@ -1,13 +1,7 @@
 //! Board module.
-//! 
+//!
 //! It provides the methods to create and interact with a Chess board
-//! 
-use serde::{Deserialize, Serialize};
-use std::{
-    collections::{HashMap, HashSet},
-    error::Error,
-    fmt,
-};
+//!
 use self::{
     Direction::{Backward, Forward, Left, Right, Unknown},
     MovementKind::{Diagonal, Horizontal, Knight as KnightMovement, Vertical},
@@ -18,6 +12,12 @@ use super::{
         Color::{self, Black, White},
         Piece,
     },
+};
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::{HashMap, HashSet},
+    error::Error,
+    fmt,
 };
 
 /// List of Errors for disallowed movements
@@ -430,7 +430,7 @@ impl Board {
 
         Ok(())
     }
-    
+
     /// Returns the `MovementKind` depending on `Movement` and piece `Color` (to determine the direction)
     /// Can return `Err` if the movemement is out of bounds or there is not movement (origin == destination)
     fn movement_kind(
