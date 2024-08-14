@@ -1,38 +1,41 @@
 struct RpcArgs {
-  auth_fn: Option<syn::Ident>,
+    auth_fn: Option<syn::Ident>,
 }
 
 impl syn::parse::Parse for RpcArgs {
-  fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-      let mut auth_fn = None;
-      
-      while !input.is_empty() {
-          let lookahead = input.lookahead1();
-          if lookahead.peek(syn::Ident) {
-              let ident: syn::Ident = input.parse()?;
-              input.parse::<syn::Token![=]>()?;
-              let lit: syn::Lit = input.parse()?;
-              match (ident.to_string().as_str(), lit) {
-                  ("auth", syn::Lit::Str(lit_str)) => {
-                      auth_fn = Some(syn::Ident::new(&lit_str.value(), lit_str.span()));
-                  },
-                  _ => return Err(syn::Error::new_spanned(ident, "Unsupported attribute")),
-              }
-          } else {
-              return Err(lookahead.error());
-          }
-          
-          if !input.is_empty() {
-              input.parse::<syn::Token![,]>()?;
-          }
-      }
-      
-      Ok(RpcArgs { auth_fn })
-  }
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut auth_fn = None;
+
+        while !input.is_empty() {
+            let lookahead = input.lookahead1();
+            if lookahead.peek(syn::Ident) {
+                let ident: syn::Ident = input.parse()?;
+                input.parse::<syn::Token![=]>()?;
+                let lit: syn::Lit = input.parse()?;
+                match (ident.to_string().as_str(), lit) {
+                    ("auth", syn::Lit::Str(lit_str)) => {
+                        auth_fn = Some(syn::Ident::new(&lit_str.value(), lit_str.span()));
+                    }
+                    _ => return Err(syn::Error::new_spanned(ident, "Unsupported attribute")),
+                }
+            } else {
+                return Err(lookahead.error());
+            }
+
+            if !input.is_empty() {
+                input.parse::<syn::Token![,]>()?;
+            }
+        }
+
+        Ok(RpcArgs { auth_fn })
+    }
 }
 
 #[proc_macro_attribute]
-pub fn rpc(attr: proc_macro::TokenStream, item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn rpc(
+    attr: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
     // Parse the input tokens into a syntax tree
     let input = syn::parse_macro_input!(item as syn::ItemStruct);
     let attrs = syn::parse_macro_input!(attr as RpcArgs);
@@ -43,9 +46,13 @@ pub fn rpc(attr: proc_macro::TokenStream, item: proc_macro::TokenStream) -> proc
     let generics_ext = &mut input_ext.clone().generics;
     let generics_params_ext = &mut generics_ext.params;
     let static_lifetime = syn::Lifetime::new("'rpc", proc_macro2::Span::call_site());
-    generics_params_ext.push(syn::GenericParam::Lifetime(syn::LifetimeParam::new(static_lifetime)));
+    generics_params_ext.push(syn::GenericParam::Lifetime(syn::LifetimeParam::new(
+        static_lifetime,
+    )));
 
-    let auth_fn = attrs.auth_fn.unwrap_or_else(|| syn::Ident::new("default_auth", proc_macro2::Span::call_site()));
+    let auth_fn = attrs
+        .auth_fn
+        .unwrap_or_else(|| syn::Ident::new("default_auth", proc_macro2::Span::call_site()));
 
     // Generate the new function body
     let gen = quote::quote! {
@@ -103,60 +110,63 @@ pub fn rpc(attr: proc_macro::TokenStream, item: proc_macro::TokenStream) -> proc
     gen.into()
 }
 
-
 #[proc_macro_attribute]
-pub fn rpc_method(_attr: proc_macro::TokenStream, item: proc_macro::TokenStream) -> proc_macro::TokenStream {
-  let mut input = syn::parse_macro_input!(item as syn::ItemFn);
-  let mut input_wrapper = input.clone();
+pub fn rpc_method(
+    _attr: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    let mut input = syn::parse_macro_input!(item as syn::ItemFn);
+    let mut input_wrapper = input.clone();
 
-  let original_input_ident = &input.sig.ident;
-  let input_sig_arg = &input.sig.inputs;
+    let original_input_ident = &input.sig.ident;
+    let input_sig_arg = &input.sig.inputs;
 
-  // Extract argument identifiers
-  let arg_names: Vec<_> = input_sig_arg.iter().map(|arg| {
-    match arg {
-        syn::FnArg::Typed(pat_type) => {
-            if let syn::Pat::Ident(pat_ident) = &*pat_type.pat {
-                &pat_ident.ident
-            } else {
-                panic!("Expected argument to be an identifier");
+    // Extract argument identifiers
+    let arg_names: Vec<_> = input_sig_arg
+        .iter()
+        .map(|arg| match arg {
+            syn::FnArg::Typed(pat_type) => {
+                if let syn::Pat::Ident(pat_ident) = &*pat_type.pat {
+                    &pat_ident.ident
+                } else {
+                    panic!("Expected argument to be an identifier");
+                }
             }
-        }
-        syn::FnArg::Receiver(_) => panic!("Expected function argument, not self"),
+            syn::FnArg::Receiver(_) => panic!("Expected function argument, not self"),
+        })
+        .collect();
+
+    let new_sig_ident = &format!("inner_{}", original_input_ident);
+    input.sig.ident = syn::Ident::new(&new_sig_ident, proc_macro2::Span::call_site());
+    let input_sig_ident = &input.sig.ident;
+    input_wrapper.sig.asyncness = None;
+
+    let input_generics = &input.sig.generics;
+
+    // Check if the function has generics
+    let turbofish = if input_generics.params.is_empty() {
+        quote::quote! {}
+    } else {
+        quote::quote! {::#input_generics}
+    };
+
+    // Construct the return type
+    let return_type: syn::Type =
+        syn::parse_str("std::pin::Pin<Box<dyn std::future::Future<Output = Response> + Send>>")
+            .unwrap();
+
+    // Update the function's return type
+    input_wrapper.sig.output =
+        syn::ReturnType::Type(syn::token::RArrow::default(), Box::new(return_type));
+
+    let input_wrapper_sig = input_wrapper.sig;
+
+    quote::quote! {
+      #input
+
+      pub #input_wrapper_sig {
+        Box::pin(#input_sig_ident #turbofish(#(#arg_names),*))
+      }
     }
-  }).collect();
-
-  let new_sig_ident = &format!("inner_{}", original_input_ident);
-  input.sig.ident = syn::Ident::new(&new_sig_ident, proc_macro2::Span::call_site());
-  let input_sig_ident = &input.sig.ident;
-  input_wrapper.sig.asyncness = None;
-
-  let input_generics = &input.sig.generics;
-
-  // Check if the function has generics
-  let turbofish = if input_generics.params.is_empty() {
-    quote::quote! {}
-  } else {
-      quote::quote! {::#input_generics}
-  };
-
-
-  // Construct the return type
-  let return_type: syn::Type = syn::parse_str("std::pin::Pin<Box<dyn std::future::Future<Output = Response> + Send>>").unwrap();
-
-  // Update the function's return type
-  input_wrapper.sig.output = syn::ReturnType::Type(
-      syn::token::RArrow::default(),
-      Box::new(return_type),
-  );
-
-  let input_wrapper_sig = input_wrapper.sig;
-
-  quote::quote! {
-    #input
-
-    pub #input_wrapper_sig {
-      Box::pin(#input_sig_ident #turbofish(#(#arg_names),*))
-    }
-  }.into()
+    .into()
 }

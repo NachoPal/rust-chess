@@ -3,12 +3,14 @@ name = "chess-client"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+futures = "0.3.30"
 tokio = { version = "1", features = ["full"] }
+async-std = "1.12.0"
+async-stdin = "0.3.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 json-rpc = { path = "../json-rpc" }
 chess-lib = { path = "../chess"}
 chess-server = { path = "../server"}
+mio = "1.0.1"
