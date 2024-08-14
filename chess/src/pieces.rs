@@ -1,3 +1,7 @@
+//! Pieces module.
+//! 
+//! Chess pieces declarations and implementations
+//! 
 use chess_proc_macros::Piece;
 use serde::{Deserialize, Serialize};
 use std::{any::Any, fmt::Debug, ops::Not};

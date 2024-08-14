@@ -1,3 +1,7 @@
+//! Rust Chess Client
+//!
+//! Client that connects with Rust Chess Server
+//! asking for movements and printing the board
 use std::{io, sync::Arc};
 use tokio::{
     net::TcpStream,
@@ -12,6 +16,8 @@ mod socket;
 use rpc::{movement, password};
 use run::run;
 
+/// Connect to the Chess Server and guide (ask for movement or wait for opponent's movement)
+/// throughthe whole game lifetime
 #[tokio::main]
 async fn main() -> io::Result<()> {
     // Connect to the server
@@ -28,12 +34,12 @@ async fn main() -> io::Result<()> {
             let _ = shutdown_tx_clone.send("Received Ctrl+C, shutting down.");
         }
     });
-
+    
     tokio::select! {
-      _ = run(reader_mutex.clone(), &mut writer, shutdown_tx.clone()) => {},
-      message = shutdown_rx.recv() => {
-        eprintln!("{:?}", message);
-      }
+        _ = run(reader_mutex.clone(), &mut writer, shutdown_tx.clone()) => {},
+        message = shutdown_rx.recv() => {
+            eprintln!("{:?}", message);
+        }
     }
     Ok(())
 }

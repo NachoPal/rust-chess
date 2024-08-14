@@ -1,3 +1,7 @@
+//! Socket module.
+//! 
+//! Methods to communicate (read & write) with the Chess Client
+//! 
 use futures::Future;
 use json_rpc::{Request, Response};
 use std::{

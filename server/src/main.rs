@@ -1,29 +1,54 @@
+//! Rust Chess Server
+//!
+//! Server that initializes a Chess Game
+//!
+//! Waits for two clients (White & Black) to connect
 use chess_lib::board::{Board, Position};
 use chess_lib::game::Game;
 use chess_lib::pieces::{Color, Piece};
 use std::{collections::HashMap, io, sync::Arc};
-use tokio::sync::{broadcast, Mutex};
+use tokio::{sync::{broadcast, Mutex}, net::TcpListener};
+use clap::Parser;
 
-mod listener;
 mod rpc;
 mod run;
 mod socket;
 
-use listener::tcp_listener;
 use rpc::{rpc, Authentication, Context};
 use run::run;
 
 const MAX_CHANNEL: usize = 16;
 
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// White Password
+    #[arg(short, long)]
+    white: String,
+
+    /// Black Password
+    #[arg(short, long)]
+    black: String,
+
+    /// Server address
+    #[arg(short, long)]
+    address: String,
+
+    /// Server port
+    #[arg(short, long)]
+    port: String,
+}
+
 pub fn clean_terminal() {
     print!("{esc}c", esc = 27 as char);
 }
 
+/// Initialize a Chess game and runs the main loop to keep
+/// listening new Tcp connections
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    clean_terminal();
+    let args = Args::parse();
     let dimension = Position { x: 7, y: 7 };
-
     let pieces: Option<Vec<(Position, Box<dyn Piece>)>> = None;
     let board = Board::new(dimension, pieces);
     let mut game = Game::new(board);
@@ -32,8 +57,8 @@ async fn main() -> io::Result<()> {
     game.start();
 
     let mut passwords = HashMap::new();
-    passwords.insert("white".to_string(), Color::White);
-    passwords.insert("black".to_string(), Color::Black);
+    passwords.insert(args.white, Color::White);
+    passwords.insert(args.black, Color::Black);
 
     let (new_addr_channel_tx, _) = broadcast::channel(MAX_CHANNEL);
     let auth = Authentication {
@@ -51,7 +76,8 @@ async fn main() -> io::Result<()> {
     };
 
     let rpc = rpc(ctx);
-    let listener = tcp_listener().await?;
+    let address = args.address + ":" + &args.port;
+    let listener = TcpListener::bind(address).await?;
 
     println!("Waiting for connections...\n");
 

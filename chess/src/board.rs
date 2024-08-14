@@ -1,10 +1,13 @@
+//! Board module.
+//! 
+//! It provides the methods to create and interact with a Chess board
+//! 
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     error::Error,
     fmt,
 };
-
 use self::{
     Direction::{Backward, Forward, Left, Right, Unknown},
     MovementKind::{Diagonal, Horizontal, Knight as KnightMovement, Vertical},
@@ -17,14 +20,22 @@ use super::{
     },
 };
 
+/// List of Errors for disallowed movements
 #[derive(Debug, PartialEq, Eq)]
 pub enum MovementError {
+    /// Try to move a Piece beyond the Board limits
     OutOfBounds,
+    /// There is a Piece in the intended Movement path
     BlockedPath,
+    /// Movement is not possible for that kind of Piece
     IllegalMovement,
+    /// The Movement will lead to an opponents's check
     Check,
+    /// There is not Piece in the Movement's origin
     NoPiece,
+    /// The Movement syntax is not valid
     WrongCommand(String),
+    /// Try to move an opponent's Piece
     WrongPiece(Color),
 }
 
@@ -46,18 +57,21 @@ impl fmt::Display for MovementError {
 
 impl Error for MovementError {}
 
+/// Representation of a Board square postion with `x` and `y` axis
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Position {
     pub x: i32,
     pub y: i32,
 }
 
+/// Movement representation between two Board squares
 #[derive(Debug)]
 pub struct Movement {
     pub from: Position,
     pub to: Position,
 }
 
+/// Possible directions for `MovementKind`
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Direction {
     Forward(u32),
@@ -67,6 +81,7 @@ pub enum Direction {
     Unknown,
 }
 
+/// All possible allowed movements in a Chess Game
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum MovementKind {
     Diagonal((Direction, Direction)),
@@ -75,17 +90,24 @@ pub enum MovementKind {
     Knight,
 }
 
+/// Chess game Board reprentation
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Board {
+    /// `Board`` max `x` and `y` positions (board size)
     pub dimension: Position,
     #[serde(skip)]
+    /// `Postion`` in the Board of still playing `Piece`s
     pub positions: HashMap<Position, Box<dyn Piece>>,
+    /// Set of still playing pieces by `Color`
     pub pieces_set: HashMap<Color, HashSet<Position>>,
     #[serde(skip)]
+    /// Set of pieces that have been already killed
     pub pieces_dead: HashMap<Color, Vec<Box<dyn Piece>>>,
 }
 
 impl Board {
+    /// Creates a new `Board` which might be already initialized with some `Piece` in place
+    /// `Board` dimentsion is configurable
     pub fn new(dimension: Position, maybe_pieces: Option<Vec<(Position, Box<dyn Piece>)>>) -> Self {
         let pieces = maybe_pieces.unwrap_or(vec![]);
 
@@ -119,10 +141,12 @@ impl Board {
         }
     }
 
+    /// Add pieces to the `Board`
     pub fn add_pieces(&mut self, new_pieces: Vec<(Position, Box<dyn Piece>)>) {
         Self::do_add_pieces(&mut self.positions, &mut self.pieces_set, new_pieces);
     }
 
+    /// Private helper method to add pieces to the `Board`
     fn do_add_pieces(
         positions: &mut HashMap<Position, Box<dyn Piece>>,
         pieces_set: &mut HashMap<Color, HashSet<Position>>,
@@ -145,6 +169,7 @@ impl Board {
         }
     }
 
+    /// Method to move a `Piece` in the `Board`
     pub fn move_piece(
         &mut self,
         playing_color: Color,
@@ -154,6 +179,7 @@ impl Board {
             .and_then(|_| self.replace_square(movement))
     }
 
+    /// Reset the `Board` with no pieces
     pub fn clean(&mut self) -> Result<(), MovementError> {
         let mut positions_to_remove = Vec::new();
 
@@ -171,6 +197,7 @@ impl Board {
         Ok(())
     }
 
+    /// Check if a `Movement` is valid
     fn can_move(&self, playing_color: Color, movement: &Movement) -> Result<bool, MovementError> {
         let piece = self
             .pick_piece(movement.from)
@@ -209,10 +236,12 @@ impl Board {
         Ok(true)
     }
 
+    /// Returns a set of already killed pieces for a certain `Color`
     pub fn dead_pieces(&self, color: Color) -> &Vec<Box<dyn Piece>> {
         self.pieces_dead.get(&color).expect("Color exists")
     }
 
+    /// Check a `Movement` is valid for a certain `Piece` type
     fn is_valid_move(
         &self,
         piece: &Box<dyn Piece>,
@@ -280,6 +309,8 @@ impl Board {
         Ok(true)
     }
 
+    /// Helper method to build all possible `MovementKind` for a certain `Piece` type
+    /// based of `Board` dimensions
     fn build_valid_moves<Y, X, Z>(&self, fy: Y, fx: X, fz: Z) -> Vec<MovementKind>
     where
         Y: Fn(u32) -> Vec<MovementKind>,
@@ -304,10 +335,13 @@ impl Board {
         .collect()
     }
 
+    /// Return a `Piece` in case it existis in a `Position`
     fn pick_piece(&self, position: Position) -> Option<&Box<dyn Piece>> {
         self.positions.get(&position)
     }
 
+    /// Remove (kill) a piece in a `Position`
+    /// Can return an `Err` if the square is empty
     pub fn remove_piece(&mut self, position: &Position) -> Result<Box<dyn Piece>, MovementError> {
         let piece_origin = self
             .positions
@@ -320,18 +354,14 @@ impl Board {
         Ok(piece_origin)
     }
 
-    #[cfg(test)]
-    pub fn test_remove_piece(
-        &mut self,
-        position: &Position,
-    ) -> Result<Box<dyn Piece>, MovementError> {
-        self.remove_piece(position)
-    }
-
+    /// Returns `true` if a `Board` square has no `Piece`
     fn square_is_empty(&self, position: Position) -> bool {
         self.pick_piece(position).is_none()
     }
 
+    /// Check if the square target is valid, either:
+    /// - `Movement`'s destination is empty
+    /// - There is a rival `Piece` in the Movement`'s destination
     fn valid_target(&self, playing_color: Color, movement: &Movement) -> bool {
         let target_square = self.pick_piece(movement.to);
         // Either a rival piece or empty
@@ -341,6 +371,7 @@ impl Board {
         rival_piece || empty_square
     }
 
+    /// Returns `true` if there are pieces between `Movement`'s origin and destination for a certain `MovementKind`
     fn blocked_path(&self, movement: &Movement, movement_kind: &MovementKind) -> bool {
         match movement_kind {
             Vertical(direction) => {
@@ -376,6 +407,7 @@ impl Board {
         }
     }
 
+    /// Replace `Movement`'s destination content with the existing piece in the origin
     fn replace_square(&mut self, movement: &Movement) -> Result<(), MovementError> {
         // Remove piece from origin and update its `pieces_set`
         let piece_origin = self.remove_piece(&movement.from)?;
@@ -398,7 +430,9 @@ impl Board {
 
         Ok(())
     }
-
+    
+    /// Returns the `MovementKind` depending on `Movement` and piece `Color` (to determine the direction)
+    /// Can return `Err` if the movemement is out of bounds or there is not movement (origin == destination)
     fn movement_kind(
         &self,
         playing_color: Color,
@@ -457,6 +491,7 @@ impl Board {
         Err(MovementError::IllegalMovement)
     }
 
+    /// Returns movement `Direction`
     fn movement_direction(
         playing_color: Color,
         movement: &Movement,
@@ -494,10 +529,9 @@ impl Board {
         }
     }
 
+    // Returns a path range based on the `Direction`
     fn path_range(direction: &Direction, from: i32, to: i32) -> std::ops::Range<i32> {
         match direction {
-            // Forward(_) | Right(_)=> from + 1..to,
-            // Backward(_) | Left(_) => to + 1..from,
             Forward(_) | Right(_) => from + 1..to,
             Backward(_) | Left(_) => to + 1..from,
             _ => from..to,

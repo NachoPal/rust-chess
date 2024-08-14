@@ -1,3 +1,7 @@
+//! Run module.
+//! 
+//! Collection of Rpc `Request` to be submitted to the server
+//! 
 use chess_lib::game::{Game, GameState};
 use chess_server::ChessResponse;
 use json_rpc::{Response, CONNECTION_CLOSED_BY_SERVER};
@@ -13,13 +17,19 @@ fn clean_terminal() {
     print!("{esc}c\n", esc = 27 as char);
 }
 
+/// Ask for password to connect to server, running a loop afterwards in case of success 
+/// asking for movements chess movements
+/// 
+/// It will either wait for its color turn or wait for a movement input
+/// 
+/// It keeps printing an updated board returned by the server
 pub async fn run(
     reader: Arc<Mutex<ReadHalf<TcpStream>>>,
     writer: &mut WriteHalf<TcpStream>,
     shutdown_tx: Sender<&str>,
 ) -> std::io::Result<()> {
-    // Ask for password to play game
     let mut response: Response;
+    // Ask for password to play game until it is successful
     loop {
         response = socket::request(writer, reader.clone(), password).await?;
         clean_terminal();
@@ -39,16 +49,17 @@ pub async fn run(
     println!("Correct password, you are playing: {:?}\n", player_color);
     print!("{}", chess_response.board);
 
-    // Ask for movement
+    // Ask for movement while the `Game` is not yet finished while waiting for server's response
+    // in case it is its turn
     while chess_response.game_state != GameState::Ended {
         if player_color == turn_color {
             response = tokio::select! {
-              response = socket::read(reader.clone()) => {
-                response?
-              },
-              _ = socket::write(writer, movement) => {
-                socket::read(reader.clone()).await?
-              },
+                    response = socket::read(reader.clone()) => {
+                    response?
+                },
+                _ = socket::write(writer, movement) => {
+                    socket::read(reader.clone()).await?
+                },
             };
         } else {
             println!("\nIt is {:?} turn. Wait for his move...", !player_color);

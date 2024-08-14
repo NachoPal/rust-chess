@@ -16,7 +16,9 @@ impl syn::parse::Parse for RpcArgs {
                     ("auth", syn::Lit::Str(lit_str)) => {
                         auth_fn = Some(syn::Ident::new(&lit_str.value(), lit_str.span()));
                     }
-                    _ => return Err(syn::Error::new_spanned(ident, "Unsupported attribute")),
+                    _ => return Err(
+                        syn::Error::new_spanned(ident, "Unsupported attribute")
+                    ),
                 }
             } else {
                 return Err(lookahead.error());
@@ -26,7 +28,6 @@ impl syn::parse::Parse for RpcArgs {
                 input.parse::<syn::Token![,]>()?;
             }
         }
-
         Ok(RpcArgs { auth_fn })
     }
 }
@@ -60,49 +61,68 @@ pub fn rpc(
 
         type Params = Vec<serde_json::Value>;
         type BoxFuture<'rpc, T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'rpc>>;
-        type MethodFunction #generics_ext = fn(core::net::SocketAddr, std::sync::Arc<tokio::sync::Mutex<#ident #generics>>, Params) -> BoxFuture<'rpc, json_rpc::Response>;
+        type MethodFunction #generics_ext 
+            = fn(
+                core::net::SocketAddr,
+                std::sync::Arc<tokio::sync::Mutex<#ident #generics>>,
+                Params
+            ) -> BoxFuture<'rpc, json_rpc::Response>;
 
         pub struct Rpc #generics_ext {
-          pub methods: HashMap<String, (MethodFunction #generics_ext, bool)>,
-          pub ctx: std::sync::Arc<tokio::sync::Mutex<#ident #generics>>,
-          pub ids: HashMap<core::net::SocketAddr, json_rpc::Id>,
+            pub methods: HashMap<String, (MethodFunction #generics_ext, bool)>,
+            pub ctx: std::sync::Arc<tokio::sync::Mutex<#ident #generics>>,
+            pub ids: HashMap<core::net::SocketAddr, json_rpc::Id>,
         }
 
         impl #generics_ext Rpc #generics_ext {
-          pub fn new(ctx: #ident #generics) -> Self {
-            Self {
-              methods: HashMap::new(),
-              ctx: std::sync::Arc::new(tokio::sync::Mutex::new(ctx)),
-              ids: HashMap::new(),
+            pub fn new(ctx: #ident #generics) -> Self {
+                Self {
+                    methods: HashMap::new(),
+                    ctx: std::sync::Arc::new(tokio::sync::Mutex::new(ctx)),
+                    ids: HashMap::new(),
+                }
             }
-          }
 
-          pub fn register_method(&mut self, name: String, method: MethodFunction #generics_ext, auth: bool) {
-            self.methods.insert(name, (method, auth));
-          }
-
-          pub async fn call_method(&self, addr: core::net::SocketAddr, id: json_rpc::Id, name: String, params: Params) -> json_rpc::Response {
-            if let Some((method, auth)) = self.methods.get(&name) {
-              if *auth && !self.auth(addr).await {
-                let error = json_rpc::JsonRpcError { code: json_rpc::FAILED_AUTH, message: "Failed authentication".to_string(), data: None };
-                return json_rpc::Response::error(error, Some(id));
-              }
-              let mut response = method(addr, self.ctx.clone(), params).await;
-              response.set_id(id);
-              response
-            } else {
-              let error = json_rpc::JsonRpcError { code: json_rpc::METHOD_NOT_FOUND, message: "Method not found".to_string(), data: None };
-              json_rpc::Response::error(error, Some(id))
+            pub fn register_method(&mut self, name: String, method: MethodFunction #generics_ext, auth: bool) {
+                self.methods.insert(name, (method, auth));
             }
-          }
 
-          pub async fn auth(&self, addr: core::net::SocketAddr) -> bool {
-            #auth_fn(self, addr).await
-          }
+            pub async fn call_method(
+                &self,
+                addr: core::net::SocketAddr,
+                id: json_rpc::Id,
+                name: String,
+                params: Params
+            ) -> json_rpc::Response {
+                if let Some((method, auth)) = self.methods.get(&name) {
+                    if *auth && !self.auth(addr).await {
+                        let error = json_rpc::JsonRpcError { 
+                            code: json_rpc::FAILED_AUTH,
+                            message: "Failed authentication".to_string(),
+                            data: None
+                        };
+                        return json_rpc::Response::error(error, Some(id));
+                    }
+                    let mut response = method(addr, self.ctx.clone(), params).await;
+                    response.set_id(id);
+                    response
+                } else {
+                    let error = json_rpc::JsonRpcError {
+                        code: json_rpc::METHOD_NOT_FOUND,
+                        message: "Method not found".to_string(),
+                        data: None
+                    };
+                    json_rpc::Response::error(error, Some(id))
+                }
+            }
+
+            pub async fn auth(&self, addr: core::net::SocketAddr) -> bool {
+                #auth_fn(self, addr).await
+            }
         }
 
         async fn default_auth(_rpc: &Rpc<'_>, _addr: core::net::SocketAddr) -> bool {
-          true
+            true
         }
     };
 
@@ -162,11 +182,10 @@ pub fn rpc_method(
     let input_wrapper_sig = input_wrapper.sig;
 
     quote::quote! {
-      #input
-
-      pub #input_wrapper_sig {
-        Box::pin(#input_sig_ident #turbofish(#(#arg_names),*))
-      }
+        #input
+        pub #input_wrapper_sig {
+            Box::pin(#input_sig_ident #turbofish(#(#arg_names),*))
+        }
     }
     .into()
 }

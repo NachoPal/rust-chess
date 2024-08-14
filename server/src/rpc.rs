@@ -1,3 +1,7 @@
+//! RPC module.
+//! 
+//! Collection of Rpc `Response` to be returned by the server
+//! 
 use chess_lib::{game::Game, pieces::Color};
 use chess_server::ChessResponse;
 use core::net::SocketAddr;
@@ -30,6 +34,10 @@ pub struct Context {
     pub playing_color_tx: Sender<Color>,
 }
 
+/// Register a `SocketAddr` as a whitelisted address to submit requests on behalf
+/// a certain playing `Color`
+/// 
+/// It will be called before each rpc method that requires authentication
 #[allow(unused)]
 async fn password_authentication(rpc: &Rpc<'_>, addr: SocketAddr) -> bool {
     let ctx = rpc.ctx.lock().await;
@@ -40,6 +48,7 @@ async fn password_authentication(rpc: &Rpc<'_>, addr: SocketAddr) -> bool {
         .map_or(false, |valid_addr| *valid_addr == addr)
 }
 
+/// Checks the validity of a submitted password by a client
 #[rpc_method]
 pub async fn password(
     addr: SocketAddr,
@@ -86,6 +95,7 @@ pub async fn password(
     }
 }
 
+/// Updates the board state based on a movement submitted by the client
 #[rpc_method]
 pub async fn movement(
     _addr: SocketAddr,
@@ -134,6 +144,7 @@ pub async fn movement(
     }
 }
 
+/// Notify the client the opponent has moved a piece
 pub async fn notify_turn(
     rpc: Arc<Rpc<'static>>,
     writer: Arc<Mutex<WriteHalf<TcpStream>>>,
@@ -184,6 +195,7 @@ pub async fn notify_turn(
     }
 }
 
+/// Notify connection was closed by the server
 pub async fn notify_close_connection(writer: Arc<Mutex<WriteHalf<TcpStream>>>) {
     let error = JsonRpcError {
         code: CONNECTION_CLOSED_BY_SERVER,
@@ -197,6 +209,7 @@ pub async fn notify_close_connection(writer: Arc<Mutex<WriteHalf<TcpStream>>>) {
     }
 }
 
+/// Create the RPC instance and register its methods
 pub(super) fn rpc(ctx: Context) -> Arc<Rpc<'static>> {
     let mut rpc = Rpc::new(ctx);
     rpc.register_method("password".to_string(), password, false);

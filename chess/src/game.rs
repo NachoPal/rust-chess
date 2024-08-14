@@ -1,5 +1,8 @@
+//! Game module.
+//! 
+//! It provides the methods to create and interact with a Chess game
+//! 
 use serde::{Deserialize, Serialize};
-
 use super::{
     board::{Board, Movement, MovementError, Position},
     ensure,
@@ -10,11 +13,13 @@ use super::{
     },
 };
 
+/// Player representation
 pub struct Player<'a> {
     pub name: &'a str,
     pub color: Color,
 }
 
+/// Represents the state of a `Game`
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone, Copy)]
 pub enum GameState {
     Ready,
@@ -23,6 +28,7 @@ pub enum GameState {
     Ended,
 }
 
+/// Main game struct
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Game {
     pub board: Board,
@@ -31,6 +37,7 @@ pub struct Game {
 }
 
 impl Game {
+    /// Creates and initialize to `Ready` a new `Game` with a fed `Board`
     pub fn new(board: Board) -> Self {
         Game {
             board,
@@ -39,6 +46,7 @@ impl Game {
         }
     }
 
+    /// Translate the movement syntax to an actual `Movement`
     fn translate_movement(&self, movement: String) -> Result<Movement, MovementError> {
         ensure!(movement.len() == 4, MovementError::WrongCommand(movement));
 
@@ -83,12 +91,14 @@ impl Game {
         })
     }
 
+    /// Set a board with the standard chess pieces layout
     pub fn set_board(&mut self) {
         let mut pieces = self.build_pieces(White);
         pieces.extend(self.build_pieces(Black));
         self.board.add_pieces(pieces)
     }
 
+    /// Returns the standard chess pieces and their positions
     fn build_pieces(&mut self, color: Color) -> Vec<(Position, Box<dyn Piece>)> {
         let (row, offset) = match color {
             White => (0, 1),
@@ -154,22 +164,27 @@ impl Game {
         pieces
     }
 
+    /// Change `GameState` to `OnGoing`
     pub fn start(&mut self) {
         self.state = GameState::OnGoing;
     }
 
+    /// Change `GameState` to `Ended`
     pub fn end(&mut self) {
         self.state = GameState::Ended;
     }
 
+    /// Change `GameState` to `Ongoing`
     pub fn is_ongoing(&self) -> bool {
         self.state == GameState::OnGoing
     }
 
+    /// Increase `Game` turn
     pub fn new_turn(&mut self) {
         self.turn += 1;
     }
 
+    /// Move a chess piece with a String command
     pub fn move_piece(&mut self, movement_string: String) -> Result<(), MovementError> {
         let movement = self.translate_movement(movement_string.trim().to_string())?;
         let res = self.board.move_piece(self.playing_color(), &movement);
@@ -179,6 +194,7 @@ impl Game {
         res
     }
 
+    /// Returns current game's turn `Color`
     fn playing_color(&self) -> Color {
         if self.turn % 2 == 0 {
             White
@@ -187,6 +203,7 @@ impl Game {
         }
     }
 
+    /// Return playing color for a certain turn
     pub fn static_playing_color(turn: u32) -> Color {
         if turn % 2 == 0 {
             White
@@ -195,6 +212,7 @@ impl Game {
         }
     }
 
+    /// Returns a printable board
     pub fn print_board(&self, color: Color) -> String {
         use colored::*;
         let mut result: Vec<String> = Vec::new();

@@ -1,3 +1,9 @@
+//! Dclarative Macros
+//!
+//! Useful macros for assertions
+//!
+//! 
+
 /// Return Err of the expression: `return Err($expression);`.
 ///
 /// Used as `fail!(expression)`.

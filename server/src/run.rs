@@ -1,3 +1,7 @@
+//! Run module.
+//! 
+//! Collection of Rpc `Request` to be submitted to the server
+//! 
 use core::net::SocketAddr;
 use std::{io, sync::Arc};
 use tokio::{
@@ -47,25 +51,24 @@ pub(super) async fn run(
         new_addr_channel_rx = ctx.auth.new_addr_channel_tx.subscribe();
     }
 
-    // while rpc.ctx.game.state != GameState::Ended {
     loop {
         let writer: Arc<Mutex<WriteHalf<TcpStream>>> = Arc::clone(&writer);
 
         tokio::select! {
-          response = respond(&mut reader, writer.clone(), addr, rpc.clone()) => {
-            if let Err(e) = response {
-              eprintln!("{:?}", e);
-              return;
+            response = respond(&mut reader, writer.clone(), addr, rpc.clone()) => {
+                if let Err(e) = response {
+                    eprintln!("{:?}", e);
+                    return;
+                }
+            },
+            addr_to_close = new_addr_channel_rx.recv() => {
+                if addr_to_close == Ok(addr) {
+                // TODO: Create a new rpc tp response connection close
+                eprintln!("Entra to close");
+                notify_close_connection(writer.clone()).await;
+                break
+                }
             }
-          },
-          addr_to_close = new_addr_channel_rx.recv() => {
-            if addr_to_close == Ok(addr) {
-              // TODO: Create a new rpc tp response connection close
-              eprintln!("Entra to close");
-              notify_close_connection(writer.clone()).await;
-              break
-            }
-          }
         }
     }
 }
