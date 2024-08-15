@@ -2,7 +2,7 @@
 //!
 //! Client that connects with Rust Chess Server
 //! asking for movements and printing the board
-use std::{io, sync::Arc};
+use std::sync::Arc;
 use tokio::{
     net::TcpStream,
     signal,
@@ -19,9 +19,9 @@ use run::run;
 /// Connect to the Chess Server and guide (ask for movement or wait for opponent's movement)
 /// throughthe whole game lifetime
 #[tokio::main]
-async fn main() -> io::Result<()> {
+async fn main() -> core::result::Result<(), String> {
     // Connect to the server
-    let socket = TcpStream::connect("127.0.0.1:8080").await?;
+    let socket = TcpStream::connect("127.0.0.1:8080").await.map_err(|err| { format!("{:?}", err)})?;
 
     let (reader, mut writer) = tokio::io::split(socket);
     let reader_mutex = Arc::new(Mutex::new(reader));
@@ -31,15 +31,21 @@ async fn main() -> io::Result<()> {
     let shutdown_tx_clone = shutdown_tx.clone();
     tokio::spawn(async move {
         if let Ok(_) = signal::ctrl_c().await {
-            let _ = shutdown_tx_clone.send("Received Ctrl+C, shutting down.");
+            println!("\n\nPress ENTER to exit");
+            let _ = shutdown_tx_clone.send("Received Ctrl+C, shutting down.").await;
         }
     });
 
-    tokio::select! {
-        _ = run(reader_mutex.clone(), &mut writer, shutdown_tx.clone()) => {},
+    let result = tokio::select! {
+        result = run(reader_mutex.clone(), &mut writer) => { result },
         message = shutdown_rx.recv() => {
-            eprintln!("{:?}", message);
+            eprintln!("{:?}", message.expect("msg exists"));
+            Ok(message.expect("msg exists").to_string())
         }
-    }
-    Ok(())
+    };
+
+    result.map(|msg| {
+        println!("{:?}", msg);
+        ()
+    }).map_err(|_| "Connection closed by Server".to_string() )
 }

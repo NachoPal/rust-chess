@@ -44,6 +44,12 @@ If you’re interested in running the project, here’s how you can do it:
    ./target/release/chess-client
    ```
 
+## How to Play
+
+1. Run the server and a client.
+2. Client will ask for a password
+3. If it is your turn, it will ask for the movement. Movements follows the format: `a1a2` (from `a1` to `a2`)
+
 ## Disclaimer
 
 This project is a **work in progress** and should be considered an educational and exploratory tool rather than a production-ready chess engine.

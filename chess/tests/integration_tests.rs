@@ -546,7 +546,7 @@ fn rook_movements_path_blocked() {
     let max_dimension_x = game.board.dimension.x;
     let max_dimension_y = game.board.dimension.y;
 
-    horizontal_vertical_path_blocked_for_both_colors::<Queen>(
+    horizontal_vertical_path_blocked_for_both_colors::<Rook>(
         &mut game,
         max_dimension_x,
         max_dimension_y,

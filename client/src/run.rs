@@ -8,13 +8,13 @@ use json_rpc::{Response, CONNECTION_CLOSED_BY_SERVER};
 use std::sync::Arc;
 use tokio::{
     io::{ReadHalf, WriteHalf},
-    sync::{mpsc::Sender, Mutex},
+    sync::Mutex,
 };
 
 use super::{movement, password, socket, TcpStream};
 
 fn clean_terminal() {
-    print!("{esc}c\n", esc = 27 as char);
+    print!("\x1B[2J\x1B[H");
 }
 
 /// Ask for password to connect to server, running a loop afterwards in case of success
@@ -26,8 +26,7 @@ fn clean_terminal() {
 pub async fn run(
     reader: Arc<Mutex<ReadHalf<TcpStream>>>,
     writer: &mut WriteHalf<TcpStream>,
-    shutdown_tx: Sender<&str>,
-) -> std::io::Result<()> {
+) -> std::io::Result<String> {
     let mut response: Response;
     // Ask for password to play game until it is successful
     loop {
@@ -72,20 +71,20 @@ pub async fn run(
             let result = response.result().expect("it is successful");
             chess_response = serde_json::from_value::<ChessResponse>(result.0.clone()).unwrap();
             turn_color = Game::static_playing_color(chess_response.turn);
+
+            print!("\n\n{}", chess_response.board);
+
         } else if response.is_error() {
-            if let Response::Error { error, .. } = response {
+            if let Response::Error { ref error, .. } = response {
                 if error.code == CONNECTION_CLOSED_BY_SERVER {
-                    let _ = shutdown_tx
-                        .send("Connection closed by server, another connection was established")
-                        .await;
-                    println!("{:?}", error);
-                    break;
+                    // break;
+                    return Ok(format!("Another connection has been established for {:?}", player_color));
                 }
+                println!("{}", response);
+                print!("{}", chess_response.board);
             }
         }
-
-        print!("{}", chess_response.board);
     }
 
-    Ok(())
+    Ok("Game finished".to_string())
 }

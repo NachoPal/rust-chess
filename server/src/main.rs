@@ -43,7 +43,7 @@ struct Args {
 }
 
 pub fn clean_terminal() {
-    print!("{esc}c", esc = 27 as char);
+    print!("\x1B[2J\x1B[H");
 }
 
 /// Initialize a Chess game and runs the main loop to keep

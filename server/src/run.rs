@@ -63,8 +63,7 @@ pub(super) async fn run(
             },
             addr_to_close = new_addr_channel_rx.recv() => {
                 if addr_to_close == Ok(addr) {
-                // TODO: Create a new rpc tp response connection close
-                eprintln!("Entra to close");
+                eprintln!("Another connection has been established. Dropping {:?}", addr);
                 notify_close_connection(writer.clone()).await;
                 break
                 }

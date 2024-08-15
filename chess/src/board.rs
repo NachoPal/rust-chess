@@ -98,7 +98,7 @@ pub struct Board {
     #[serde(skip)]
     /// `Postion`` in the Board of still playing `Piece`s
     pub positions: HashMap<Position, Box<dyn Piece>>,
-    /// Set of still playing pieces by `Color`
+    /// Set of still playing pieces `Position`s by `Color`
     pub pieces_set: HashMap<Color, HashSet<Position>>,
     #[serde(skip)]
     /// Set of pieces that have been already killed
@@ -218,7 +218,7 @@ impl Board {
             MovementError::BlockedPath
         );
         // Check if the movement path is blocked
-        let blocked_path = self.blocked_path(&movement, &movement_kind);
+        let blocked_path = self.blocked_path(&movement, &movement_kind, &playing_color);
         if !piece.is_king() && !piece.is_knight() {
             ensure!(!blocked_path, MovementError::BlockedPath);
         }
@@ -372,17 +372,17 @@ impl Board {
     }
 
     /// Returns `true` if there are pieces between `Movement`'s origin and destination for a certain `MovementKind`
-    fn blocked_path(&self, movement: &Movement, movement_kind: &MovementKind) -> bool {
+    fn blocked_path(&self, movement: &Movement, movement_kind: &MovementKind, color: &Color) -> bool {
         match movement_kind {
             Vertical(direction) => {
-                Self::path_range(direction, movement.from.y, movement.to.y).any(|y| {
+                Self::path_range(direction, movement.from.y, movement.to.y, color).any(|y| {
                     !self.square_is_empty(Position {
                         x: movement.from.x,
                         y,
                     })
                 })
             }
-            Horizontal(direction) => Self::path_range(direction, movement.from.x, movement.to.x)
+            Horizontal(direction) => Self::path_range(direction, movement.from.x, movement.to.x, color)
                 .any(|x| {
                     !self.square_is_empty(Position {
                         x,
@@ -390,16 +390,13 @@ impl Board {
                     })
                 }),
             Diagonal((vertical_directon, horizontal_direction)) => {
-                println!("VERTICAL DIRECTION {:?}", vertical_directon);
-                println!("HORIZONTAL DIRECTION {:?}", horizontal_direction);
-                Self::path_range(vertical_directon, movement.from.y, movement.to.y)
+                Self::path_range(vertical_directon, movement.from.y, movement.to.y, color)
                     .enumerate()
                     .any(|(i, y)| {
                         let x =
-                            Self::path_range(horizontal_direction, movement.from.x, movement.to.x)
+                            Self::path_range(horizontal_direction, movement.from.x, movement.to.x, color)
                                 .rev()
                                 .collect::<Vec<i32>>()[i];
-                        println!("X: {:?}, Y: {:?}", x, y);
                         !self.square_is_empty(Position { x, y })
                     })
             }
@@ -501,9 +498,17 @@ impl Board {
         match movement_kind {
             Horizontal(_) => {
                 if movement.to.x > movement.from.x {
-                    Right(x_variance)
+                    if playing_color == White {
+                        Right(x_variance)
+                    } else {
+                        Left(x_variance)
+                    }
                 } else if movement.to.x < movement.from.x {
-                    Left(x_variance)
+                    if playing_color == White {
+                        Left(x_variance)
+                    } else {
+                        Right(x_variance)
+                    }
                 } else {
                     Unknown
                 }
@@ -529,11 +534,13 @@ impl Board {
         }
     }
 
-    // Returns a path range based on the `Direction`
-    fn path_range(direction: &Direction, from: i32, to: i32) -> std::ops::Range<i32> {
+    /// Returns a path range based on the `Direction`
+    fn path_range(direction: &Direction, from: i32, to: i32, color: &Color) -> std::ops::Range<i32> {
         match direction {
-            Forward(_) | Right(_) => from + 1..to,
-            Backward(_) | Left(_) => to + 1..from,
+            Forward(_) | Right(_) if *color == White => from + 1..to,
+            Forward(_) | Right(_) if *color == Black => to + 1..from,
+            Backward(_) | Left(_) if *color == White => to + 1..from,
+            Backward(_) | Left(_) if *color == Black => from + 1..to,
             _ => from..to,
         }
     }

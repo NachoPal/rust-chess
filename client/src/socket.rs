@@ -62,8 +62,8 @@ where
 pub async fn read(socket_mutex: Arc<Mutex<ReadHalf<TcpStream>>>) -> io::Result<Response> {
     let read_socket = ReadSocket { lock: socket_mutex };
     let buf = read_socket.await;
-    println!("Buff {:?}", buf);
-    Ok(serde_json::from_slice::<Response>(&buf).unwrap())
+    let response = serde_json::from_slice::<Response>(&buf)?;
+    Ok(response)
 }
 
 pub async fn request<R, F>(
