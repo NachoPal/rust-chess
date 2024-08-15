@@ -73,12 +73,14 @@ pub async fn run(
             turn_color = Game::static_playing_color(chess_response.turn);
 
             print!("\n\n{}", chess_response.board);
-
         } else if response.is_error() {
             if let Response::Error { ref error, .. } = response {
                 if error.code == CONNECTION_CLOSED_BY_SERVER {
                     // break;
-                    return Ok(format!("Another connection has been established for {:?}", player_color));
+                    return Ok(format!(
+                        "Another connection has been established for {:?}",
+                        player_color
+                    ));
                 }
                 println!("{}", response);
                 print!("{}", chess_response.board);

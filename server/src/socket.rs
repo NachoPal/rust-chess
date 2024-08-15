@@ -33,7 +33,9 @@ impl Future for ReadSocket {
                 match unsafe { Pin::new_unchecked(&mut read_future).poll(ctx) } {
                     // If data is ready to be read in socket I return
                     Poll::Ready(n) => {
-                        return Poll::Ready(buf[..n.expect("Connection closed by Server")].to_vec());
+                        return Poll::Ready(
+                            buf[..n.expect("Connection closed by Server")].to_vec(),
+                        );
                     }
                     Poll::Pending => {
                         drop(socket_guard);

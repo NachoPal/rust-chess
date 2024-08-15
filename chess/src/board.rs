@@ -372,7 +372,12 @@ impl Board {
     }
 
     /// Returns `true` if there are pieces between `Movement`'s origin and destination for a certain `MovementKind`
-    fn blocked_path(&self, movement: &Movement, movement_kind: &MovementKind, color: &Color) -> bool {
+    fn blocked_path(
+        &self,
+        movement: &Movement,
+        movement_kind: &MovementKind,
+        color: &Color,
+    ) -> bool {
         match movement_kind {
             Vertical(direction) => {
                 Self::path_range(direction, movement.from.y, movement.to.y, color).any(|y| {
@@ -382,21 +387,26 @@ impl Board {
                     })
                 })
             }
-            Horizontal(direction) => Self::path_range(direction, movement.from.x, movement.to.x, color)
-                .any(|x| {
+            Horizontal(direction) => {
+                Self::path_range(direction, movement.from.x, movement.to.x, color).any(|x| {
                     !self.square_is_empty(Position {
                         x,
                         y: movement.from.y,
                     })
-                }),
+                })
+            }
             Diagonal((vertical_directon, horizontal_direction)) => {
                 Self::path_range(vertical_directon, movement.from.y, movement.to.y, color)
                     .enumerate()
                     .any(|(i, y)| {
-                        let x =
-                            Self::path_range(horizontal_direction, movement.from.x, movement.to.x, color)
-                                .rev()
-                                .collect::<Vec<i32>>()[i];
+                        let x = Self::path_range(
+                            horizontal_direction,
+                            movement.from.x,
+                            movement.to.x,
+                            color,
+                        )
+                        .rev()
+                        .collect::<Vec<i32>>()[i];
                         !self.square_is_empty(Position { x, y })
                     })
             }
@@ -535,7 +545,12 @@ impl Board {
     }
 
     /// Returns a path range based on the `Direction`
-    fn path_range(direction: &Direction, from: i32, to: i32, color: &Color) -> std::ops::Range<i32> {
+    fn path_range(
+        direction: &Direction,
+        from: i32,
+        to: i32,
+        color: &Color,
+    ) -> std::ops::Range<i32> {
         match direction {
             Forward(_) | Right(_) if *color == White => from + 1..to,
             Forward(_) | Right(_) if *color == Black => to + 1..from,

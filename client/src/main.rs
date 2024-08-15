@@ -21,7 +21,9 @@ use run::run;
 #[tokio::main]
 async fn main() -> core::result::Result<(), String> {
     // Connect to the server
-    let socket = TcpStream::connect("127.0.0.1:8080").await.map_err(|err| { format!("{:?}", err)})?;
+    let socket = TcpStream::connect("127.0.0.1:8080")
+        .await
+        .map_err(|err| format!("{:?}", err))?;
 
     let (reader, mut writer) = tokio::io::split(socket);
     let reader_mutex = Arc::new(Mutex::new(reader));
@@ -32,7 +34,9 @@ async fn main() -> core::result::Result<(), String> {
     tokio::spawn(async move {
         if let Ok(_) = signal::ctrl_c().await {
             println!("\n\nPress ENTER to exit");
-            let _ = shutdown_tx_clone.send("Received Ctrl+C, shutting down.").await;
+            let _ = shutdown_tx_clone
+                .send("Received Ctrl+C, shutting down.")
+                .await;
         }
     });
 
@@ -44,8 +48,10 @@ async fn main() -> core::result::Result<(), String> {
         }
     };
 
-    result.map(|msg| {
-        println!("{:?}", msg);
-        ()
-    }).map_err(|_| "Connection closed by Server".to_string() )
+    result
+        .map(|msg| {
+            println!("{:?}", msg);
+            ()
+        })
+        .map_err(|_| "Connection closed by Server".to_string())
 }
